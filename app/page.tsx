@@ -7,32 +7,11 @@ import { loadBooks } from "@/lib/data";
 export default async function Home() {
   const books = await loadBooks();   // ← this loads your real gutenberg_metadata.csv
 
-  return (
-    <main className="max-w-7xl mx-auto px-6 py-12">
-      {/* Hero - exact match to your PDF */}
-      <div className="text-center py-20 bg-gradient-to-br from-emerald-900 to-slate-950 rounded-3xl mb-16">
-        <div className="flex justify-center mb-6">
-          <Rocket className="w-16 h-16 text-emerald-400" />
-        </div>
-        <h1 className="text-6xl font-bold tracking-tighter mb-4">Rocket Readers</h1>
-        <p className="text-2xl text-emerald-300 mb-8">
-          Sight-word coverage • Dialogue ratio • Flesch scores • Instant Rocket Editions
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link 
-            href="/analyze" 
-            className="px-8 py-4 bg-emerald-400 hover:bg-emerald-500 text-slate-950 font-semibold rounded-2xl text-lg transition"
-          >
-            Analyze Any Book Now →
-          </Link>
-          <Link 
-            href="/search" 
-            className="px-8 py-4 border border-emerald-400 text-emerald-400 hover:bg-emerald-400/10 rounded-2xl text-lg transition"
-          >
-            Browse 78,000+ Books
-          </Link>
-        </div>
-      </div>
+<div className="flex gap-4 justify-center flex-wrap">
+  <Link href="/leaderboard" className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-3xl text-lg transition">Check the Leaderboards!</Link>
+  <Link href="/search" className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-3xl text-lg transition">Find the Perfect Book for You</Link>
+  <Link href="/analyze" className="px-8 py-4 bg-emerald-400 hover:bg-emerald-500 text-slate-950 font-semibold rounded-3xl text-lg transition">Analyze Any Book Now →</Link>
+</div>
 
       {/* Hot off the Launchpad — now uses REAL books from your CSV */}
       <h2 className="text-3xl font-semibold mb-6 flex items-center gap-2">

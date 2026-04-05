@@ -5,15 +5,14 @@ import WordLengthChart from "@/components/WordLengthChart";
 import RocketReader from "@/components/RocketReader";
 
 export default function BookPage({ params }: { params: { id: string } }) {
-  // Mock data for now (we'll connect real CSV + processor later)
-  const stats = {
-    dolchBreadth: "87%",
-    dolchSight: "64%",
-    frySight: "71%",
-    fleschGrade: "4.8",
-    fleschEase: "78.5",
-    dialogRatio: "42%",
-  };
+const stats = {
+  dolchBreadth: book.dolchBreadth || "87%",
+  dolchSight: book.dolchSight || "64%",
+  frySight: book.frySight || "82%",
+  fleschGrade: book.fleschGrade || "4.8",
+  fleschEase: book.fleschEase || "78.5",
+  dialogRatio: book.dialogRatio || "42%",
+};
 
   const sampleHtml = `<p>This is a <span class="dolch-prek">sample</span> Rocket Reader with <span class="pos-noun">nouns</span> and <span class="pos-verb">verbs</span> highlighted.</p>`;
 

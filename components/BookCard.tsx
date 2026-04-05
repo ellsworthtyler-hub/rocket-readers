@@ -31,6 +31,10 @@ export function BookCard({ id, title, author = "Unknown", dolch, fry }: BookCard
             <span className="font-mono">Fry</span>
             <span className="font-bold">{fry}</span>
           </div>
+		  <div className="flex gap-3 text-xs mt-3">
+			<div className="bg-white/10 text-white px-3 py-1 rounded-2xl">Dialog {book.dialogRatio}</div>
+			<div className="bg-white/10 text-white px-3 py-1 rounded-2xl">Avg Word {book.avgWordLength || "N/A"}</div>
+		  </div>
         </div>
       </div>
     </Link>
