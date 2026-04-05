@@ -1,84 +1,80 @@
+// components/RocketReader.tsx
 'use client';
 import { useEffect, useRef } from "react";
 
-export default function RocketReader({ html }: { html: string }) {
+interface RocketReaderProps {
+  html: string;
+}
+
+export default function RocketReader({ html }: RocketReaderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear any previous scripts to prevent duplicate declarations
-    const existingScripts = containerRef.current.querySelectorAll("script");
-    existingScripts.forEach(s => s.remove());
+    // Clear previous content
+    containerRef.current.innerHTML = html;
 
-    // Create and run the publisher's script safely
+    // Create a single script with defensive checks
     const script = document.createElement("script");
     script.textContent = `
-      let activePOS = new Set();
-      let activeDolch = new Set();
-
-      function togglePOS(type) {
-        if (activePOS.has(type)) activePOS.delete(type);
-        else activePOS.add(type);
-        updatePOS();
+      // Prevent duplicate declarations
+      if (typeof window.activePOS === "undefined") {
+        window.activePOS = new Set();
+        window.activeDolch = new Set();
       }
 
-      function updatePOS() {
-        const spans = document.querySelectorAll('#text-content span');
-        spans.forEach(span => {
-          let shouldActivate = false;
-          for (let cls of span.classList) {
-            if (cls.startsWith('pos-')) {
-              const posType = cls.substring(4);
-              if (activePOS.has(posType)) { shouldActivate = true; break; }
-            }
+      window.togglePOS = function(type) {
+        if (window.activePOS.has(type)) {
+          window.activePOS.delete(type);
+        } else {
+          window.activePOS.add(type);
+        }
+        window.updatePOSHighlights();
+      };
+
+      window.toggleDolch = function() {
+        if (window.activeDolch.size > 0) {
+          window.activeDolch.clear();
+        } else {
+          window.activeDolch.add("dolch");
+        }
+        window.updateDolchHighlights();
+      };
+
+      window.updatePOSHighlights = function() {
+        document.querySelectorAll('.pos').forEach(el => {
+          const posType = el.getAttribute('data-pos');
+          if (posType && window.activePOS.has(posType)) {
+            el.style.backgroundColor = 'rgba(16, 185, 129, 0.3)';
+          } else {
+            el.style.backgroundColor = '';
           }
-          span.classList.toggle('active', shouldActivate);
         });
-      }
+      };
 
-      function removeAllPOS() {
-        activePOS.clear();
-        updatePOS();
-      }
-
-      function toggleDolch(level) {
-        const grades = ['prek', 'kindergarten', 'first', 'second', 'third'];
-        const gradeName = grades[level];
-        if (activeDolch.has(gradeName)) activeDolch.delete(gradeName);
-        else activeDolch.add(gradeName);
-        updateDolch();
-      }
-
-      function updateDolch() {
-        document.querySelectorAll('#text-content span').forEach(span => {
-          let isDolch = false;
-          for (let cls of span.classList) {
-            if (cls.startsWith('dolch-')) {
-              const g = cls.substring(6);
-              if (activeDolch.has(g)) { isDolch = true; break; }
-            }
+      window.updateDolchHighlights = function() {
+        document.querySelectorAll('.dolch').forEach(el => {
+          if (window.activeDolch.size > 0) {
+            el.style.backgroundColor = 'rgba(234, 179, 8, 0.3)';
+          } else {
+            el.style.backgroundColor = '';
           }
-          span.classList.toggle('active-green', isDolch);
         });
-      }
-
-      function removeAllDolch() {
-        activeDolch.clear();
-        updateDolch();
-      }
+      };
     `;
 
     document.body.appendChild(script);
 
-    return () => script.remove();
+    return () => {
+      script.remove();
+    };
   }, [html]);
 
   return (
     <div 
       ref={containerRef}
-      className="prose prose-invert max-w-none bg-white/5 p-10 rounded-3xl shadow-inner leading-relaxed"
-      dangerouslySetInnerHTML={{ __html: html }} 
+      className="prose prose-invert max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10"
     />
   );
 }
