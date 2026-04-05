@@ -11,10 +11,8 @@ export interface Book {
   title: string;
   author: string;
   dolchBreadth: string;
-  dolchSight?: string;      // optional
   frySight: string;
   fleschGrade: string;
-  fleschEase: string;       // now optional in mapping
   dialogRatio: string;
   html?: string;
 }
@@ -26,7 +24,7 @@ export async function loadBooks(): Promise<Book[]> {
 
   const { data, error } = await supabase
     .from('books')
-    .select('id, title, author, dolch_breadth, dolch_sight, fry_sight, flesch_grade, flesch_ease, dialog_ratio')
+    .select('id, title, author, dolch_breadth, fry_sight, flesch_grade, dialog_ratio')
     .limit(10000);
 
   if (error) {
@@ -39,10 +37,8 @@ export async function loadBooks(): Promise<Book[]> {
     title: row.title,
     author: row.author,
     dolchBreadth: row.dolch_breadth || "N/A",
-    dolchSight: row.dolch_sight || "N/A",
     frySight: row.fry_sight || "N/A",
     fleschGrade: row.flesch_grade || "N/A",
-    fleschEase: row.flesch_ease || "N/A",
     dialogRatio: row.dialog_ratio || "N/A",
   }));
 

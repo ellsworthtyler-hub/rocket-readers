@@ -1,0 +1,59 @@
+04:09:24.750 Running build in Washington, D.C., USA (East) – iad1
+04:09:24.751 Build machine configuration: 2 cores, 8 GB
+04:09:24.760 Cloning github.com/ellsworthtyler-hub/rocket-readers (Branch: main, Commit: c7d5281)
+04:09:24.761 Skipping build cache, deployment was triggered without cache.
+04:09:25.987 Cloning completed: 1.226s
+04:09:26.392 Running "vercel build"
+04:09:27.068 Vercel CLI 50.38.2
+04:09:27.305 Installing dependencies...
+04:09:38.964 
+04:09:38.964 added 416 packages in 11s
+04:09:38.965 
+04:09:38.965 144 packages are looking for funding
+04:09:38.965   run `npm fund` for details
+04:09:39.022 Detected Next.js version: 16.2.2
+04:09:39.028 Running "npm run build"
+04:09:39.130 
+04:09:39.131 > rocket-readers@0.1.0 build
+04:09:39.131 > next build
+04:09:39.131 
+04:09:39.674 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+04:09:39.675 This information is used to shape Next.js' roadmap and prioritize features.
+04:09:39.675 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+04:09:39.675 https://nextjs.org/telemetry
+04:09:39.676 
+04:09:39.693 ▲ Next.js 16.2.2 (Turbopack)
+04:09:39.694 
+04:09:39.726   Creating an optimized production build ...
+04:09:46.597 
+04:09:46.597 > Build error occurred
+04:09:46.601 Error: Turbopack build failed with 2 errors:
+04:09:46.601 ./app/page.tsx:21:12
+04:09:46.601 Expected ';', '}' or <eof>
+04:09:46.602   [90m19 |[0m         <span className=[32m"text-emerald-400 text-xl"[0m>🚀</span>
+04:09:46.602   [90m20 |[0m       </h2>
+04:09:46.602 [31m[1m>[0m [90m21 |[0m       <div className=[32m"grid grid-cols-1 md:grid-cols-3 gap-6"[0m>
+04:09:46.602   [90m   |[0m            [31m[1m^^^^^^^^^[0m
+04:09:46.602   [90m22 |[0m         {books.slice([35m0[0m, [35m3[0m).map((book) => (
+04:09:46.602   [90m23 |[0m           <[33mBookCard[0m
+04:09:46.602   [90m24 |[0m             key={book.id}
+04:09:46.602 
+04:09:46.603 Parsing ecmascript source code failed
+04:09:46.603 
+04:09:46.603 
+04:09:46.603 ./app/leaderboard/page.tsx:38:13
+04:09:46.603 Expected '</', got '...'
+04:09:46.603   [90m36 |[0m 		<div key={book.id} className=[32m"relative"[0m>
+04:09:46.603   [90m37 |[0m 		<div className=[32m"absolute -top-2 -left-2 bg-emerald-400 text-slate-950 text-xs font-bold w-...[0m
+04:09:46.604 [31m[1m>[0m [90m38 |[0m 		<[33mBookCard[0m ... />
+04:09:46.604   [90m   |[0m           [31m[1m^^^[0m
+04:09:46.604   [90m39 |[0m 	  </div>
+04:09:46.604   [90m40 |[0m ))}
+04:09:46.604   [90m41 |[0m     </div>
+04:09:46.604 
+04:09:46.604 Parsing ecmascript source code failed
+04:09:46.604 
+04:09:46.604 
+04:09:46.605     at <unknown> (./app/page.tsx:21:12)
+04:09:46.605     at <unknown> (./app/leaderboard/page.tsx:38:13)
+04:09:46.642 Error: Command "npm run build" exited with 1

@@ -8,9 +8,11 @@ interface BookCardProps {
   author?: string;
   dolch: string;
   fry: string;
+  dialogRatio?: string;      // added
+  avgWordLength?: string;    // added
 }
 
-export function BookCard({ id, title, author = "Unknown", dolch, fry }: BookCardProps) {
+export function BookCard({ id, title, author = "Unknown", dolch, fry, dialogRatio, avgWordLength }: BookCardProps) {
   return (
     <Link href={`/book/${id}`} className="group block">
       <div className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-3xl p-6 transition-all hover:-translate-y-1">
@@ -31,10 +33,12 @@ export function BookCard({ id, title, author = "Unknown", dolch, fry }: BookCard
             <span className="font-mono">Fry</span>
             <span className="font-bold">{fry}</span>
           </div>
-		  <div className="flex gap-3 text-xs mt-3">
-			<div className="bg-white/10 text-white px-3 py-1 rounded-2xl">Dialog {book.dialogRatio}</div>
-			<div className="bg-white/10 text-white px-3 py-1 rounded-2xl">Avg Word {book.avgWordLength || "N/A"}</div>
-		  </div>
+        </div>
+
+        {/* New stats from your request */}
+        <div className="flex gap-3 text-xs mt-3">
+          <div className="bg-white/10 text-white px-3 py-1 rounded-2xl">Dialog {dialogRatio || "N/A"}</div>
+          <div className="bg-white/10 text-white px-3 py-1 rounded-2xl">Avg Word {avgWordLength || "N/A"}</div>
         </div>
       </div>
     </Link>
