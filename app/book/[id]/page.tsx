@@ -8,10 +8,15 @@ export default async function BookPage({ params }: { params: { id: string } }) {
   const book = await getBookById(params.id);
 
   if (!book) {
-    return <div className="text-center py-20 text-2xl text-white">Book not found.</div>;
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-12 text-center">
+        <h1 className="text-4xl font-bold text-white">Book not found</h1>
+        <p className="text-slate-400 mt-4">ID: {params.id}</p>
+      </div>
+    );
   }
 
-  // Emoticon logic exactly as you requested
+  // Emoticon logic exactly as you requested in the PDF
   const getEmoticon = (value: string | number, type: "dolch" | "fry" | "flesch" | "dialog") => {
     const num = parseFloat(String(value));
     if (isNaN(num)) return "";
@@ -42,7 +47,7 @@ export default async function BookPage({ params }: { params: { id: string } }) {
         <p className="text-slate-400 mt-1">Gutenberg Archive Book #{book.id}</p>
       </div>
 
-      {/* Expanded Stats Grid – matches your PDF mockup */}
+      {/* Expanded Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-16">
         <div className="bg-white/5 p-6 rounded-3xl flex items-center gap-4">
           <div className="text-emerald-400 text-4xl">{getEmoticon(book.dolchBreadth, "dolch")}</div>
@@ -89,7 +94,7 @@ export default async function BookPage({ params }: { params: { id: string } }) {
       {/* Interactive Rocket Reader */}
       <div>
         <h2 className="text-2xl font-semibold mb-6">Interactive Rocket Reader</h2>
-        <RocketReader html="<p>Interactive reader loading... (full HTML coming in next phase)</p>" />
+        <RocketReader html="<p>Interactive reader loading... (full HTML coming soon)</p>" />
       </div>
     </div>
   );
