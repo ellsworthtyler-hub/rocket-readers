@@ -12,24 +12,15 @@ async function importCSV() {
   const csvText = await fs.readFile('./public/gutenberg_metadata.csv', 'utf-8');
   const result = Papa.parse(csvText, { header: true, skipEmptyLines: true });
 
-  console.log(`📊 Parsed ${result.data.length} rows`);
-
-  // Debug: show first row keys so we can see exact column names
-  if (result.data.length > 0) {
-    console.log("First row keys:", Object.keys(result.data[0]));
-  }
+  console.log(`📊 Parsed ${result.data.length} rows from CSV`);
 
   const books = result.data
-    .filter((row: any) => {
-      const id = row["Etext Number"] || row["Book#"] || row["Etext_Number"];
-      const title = row["Title"];
-      return id && title && String(title).trim() !== "";
-    })
+    .filter((row: any) => row["Etext Number"] && row["Title"])
     .map((row: any) => ({
-      id: String(row["Etext Number"] || row["Book#"] || row["Etext_Number"] || ""),
-      title: String(row["Title"] || "Untitled"),
-      author: String(row["Authors"] || row["Author"] || "Unknown"),
-      dolch_breadth: row["dolch_prek_breadth"] || row["Dolch Breadth %"] || null,
+      id: String(row["Etext Number"]),
+      title: row["Title"],
+      author: row["Authors"] || "Unknown",
+      dolch_breadth: row["dolch_prek_breadth"] || null,
       fry_sight: row["Fry Sight Word Breadth"] || null,
       flesch_grade: row["Flesch_Kincaid Grade Score"] || null,
       dialog_ratio: row["Dialog Ratio"] || null,
