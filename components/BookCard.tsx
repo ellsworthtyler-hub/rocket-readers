@@ -15,7 +15,9 @@ interface BookCardProps {
 export function BookCard({ id, title, author = "Unknown", dolch, fry, dialogRatio, fleschGrade }: BookCardProps) {
   const toPercent = (value: string) => {
     const num = parseFloat(value);
-    return isNaN(num) ? "N/A" : `${(num * 100).toFixed(1)}%`;
+    if (isNaN(num)) return "N/A";
+    // Smart: Supabase already stores Dialog as percent (e.g. 48.26) — don't double-multiply
+    return num > 1 ? `${num.toFixed(1)}%` : `${(num * 100).toFixed(1)}%`;
   };
 
   return (
@@ -41,13 +43,13 @@ export function BookCard({ id, title, author = "Unknown", dolch, fry, dialogRati
           </div>
         </div>
 
-        {/* Row 2: Dialog Ratio + Flesch Grade */}
+        {/* Row 2: Dialog Ratio + Flesch Grade (clean styling) */}
         <div className="flex gap-3 text-xs">
-          <div className="bg-white/10 text-white px-3 py-1 rounded-2xl flex items-center gap-1 flex-1">
+          <div className="bg-emerald-900/50 text-emerald-300 px-3 py-1 rounded-2xl flex items-center gap-1 flex-1">
             <span className="font-mono">Dialog</span>
             <span className="font-bold">{dialogRatio ? toPercent(dialogRatio) : "N/A"}</span>
           </div>
-          <div className="bg-white/10 text-white px-3 py-1 rounded-2xl flex items-center gap-1 flex-1">
+          <div className="bg-amber-900/50 text-amber-300 px-3 py-1 rounded-2xl flex items-center gap-1 flex-1">
             <span className="font-mono">Flesch</span>
             <span className="font-bold">{fleschGrade || "N/A"}</span>
           </div>
