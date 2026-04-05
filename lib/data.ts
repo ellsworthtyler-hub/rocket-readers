@@ -33,7 +33,7 @@ export async function loadBooks(): Promise<Book[]> {
   }
 
   booksCache = data.map((row: any) => ({
-    id: row.id,
+    id: String(row.id || row["Etext Number"] || row["Book#"] || ""),
     title: row.title,
     author: row.author,
     dolchBreadth: row.dolch_breadth || "N/A",
@@ -43,10 +43,13 @@ export async function loadBooks(): Promise<Book[]> {
   }));
 
   console.log(`✅ Loaded ${booksCache.length} books from Supabase`);
+  console.log("First 5 book IDs:", booksCache.slice(0, 5).map(b => b.id));
   return booksCache;
 }
 
 export async function getBookById(id: string) {
   const all = await loadBooks();
-  return all.find(b => b.id === id);
+  const found = all.find(b => String(b.id) === String(id));
+  console.log(`🔍 Looking for ID "${id}" → found: ${!!found}`);
+  return found;
 }
