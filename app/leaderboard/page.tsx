@@ -37,13 +37,16 @@ export default function LeaderboardPage() {
             <div className="absolute -top-2 -left-2 bg-emerald-400 text-slate-950 text-xs font-bold w-6 h-6 rounded-2xl flex items-center justify-center z-10">
               {index + 1}
             </div>
-            <BookCard
-              id={book.id}
-              title={book.title}
-              author={book.author}
-              dolch={book.dolchBreadth}
-              fry={book.frySight}
-            />
+				<BookCard
+				  key={book.id}
+				  id={book.id}
+				  title={book.title}
+				  author={book.author}
+				  dolch={book.dolchBreadth}
+				  fry={book.frySight}
+				  dialogRatio={book.dialogRatio}
+				  fleschGrade={book.fleschGrade}
+				/>
           </div>
         ))}
       </div>

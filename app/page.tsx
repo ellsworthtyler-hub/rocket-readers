@@ -32,14 +32,16 @@ export default async function Home() {
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {books.slice(0, 3).map((book) => (
-          <BookCard
-            key={book.id}
-            id={book.id}
-            title={book.title}
-            author={book.author}
-            dolch={book.dolchBreadth}
-            fry={book.frySight}
-          />
+			<BookCard
+			  key={book.id}
+			  id={book.id}
+			  title={book.title}
+			  author={book.author}
+			  dolch={book.dolchBreadth}
+			  fry={book.frySight}
+			  dialogRatio={book.dialogRatio}
+			  fleschGrade={book.fleschGrade}
+			/>
         ))}
       </div>
 

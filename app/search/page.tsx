@@ -118,14 +118,16 @@ export default function SearchPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {filteredBooks.length > 0 ? (
           filteredBooks.map((book) => (
-            <BookCard
-              key={book.id}
-              id={book.id}
-              title={book.title}
-              author={book.author}
-              dolch={book.dolchBreadth}
-              fry={book.frySight}
-            />
+			<BookCard
+			  key={book.id}
+			  id={book.id}
+			  title={book.title}
+			  author={book.author}
+			  dolch={book.dolchBreadth}
+			  fry={book.frySight}
+			  dialogRatio={book.dialogRatio}
+			  fleschGrade={book.fleschGrade}
+			/>
           ))
         ) : (
           <p className="text-slate-400 col-span-3 text-center py-12">No books match your filters.</p>
