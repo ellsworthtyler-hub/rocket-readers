@@ -22,17 +22,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsPremium(session?.user?.user_metadata?.is_premium ?? false);
-      setLoading(false);
-    });
+    const fetchSessionAndProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setIsPremium(session?.user?.user_metadata?.is_premium ?? false);
+      if (currentUser) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_premium')
+          .eq('id', currentUser.id)
+          .single();
+
+        setIsPremium(profile?.is_premium ?? false);
+      } else {
+        setIsPremium(false);
+      }
+      setLoading(false);
+    };
+
+    fetchSessionAndProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_premium')
+          .eq('id', currentUser.id)
+          .single();
+        setIsPremium(profile?.is_premium ?? false);
+      } else {
+        setIsPremium(false);
+      }
       setLoading(false);
     });
 
