@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq('id', currentUser.id)
           .single();
 
+        // @ts-ignore - profile is typed as never
         setIsPremium(!!profile?.is_premium);
       } else {
         setIsPremium(false);
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select('is_premium')
           .eq('id', currentUser.id)
           .single();
+        // @ts-ignore - profile is typed as never
         setIsPremium(!!profile?.is_premium);
       } else {
         setIsPremium(false);
