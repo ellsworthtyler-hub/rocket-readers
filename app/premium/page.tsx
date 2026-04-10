@@ -9,12 +9,27 @@ export default function PremiumPage() {
   const { user, isPremium } = useAuth();
 
   const handleSignUp = async () => {
+    const email = prompt('Enter your email to receive a magic login link:');
+    if (!email) return;
+
     const { error } = await supabase.auth.signInWithOtp({
-      email: prompt('Enter your email to get a magic login link:') || '',
-      options: { emailRedirectTo: window.location.origin + '/premium' },
+      email,
+      options: {
+        // ← FIXED: always point to the live site
+        emailRedirectTo: 'https://rocket-readers.vercel.app/premium',
+      },
     });
-    if (error) alert(error.message);
-    else alert('Magic link sent to your email!');
+
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      alert('Magic link sent! Check your email (including spam).');
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
   };
 
   return (
@@ -45,11 +60,13 @@ export default function PremiumPage() {
             <div className="absolute -top-3 right-6 bg-amber-400 text-emerald-900 text-xs font-bold px-4 py-1 rounded-3xl">RECOMMENDED</div>
             <h2 className="text-2xl font-semibold mb-2">Premium</h2>
             <p className="opacity-90 mb-6">Full enhanced readers</p>
+            
             <div className="flex items-baseline gap-2 mb-8">
               <span className="text-6xl font-bold">$4.99</span>
               <span className="text-xl opacity-75">/mo</span>
               <span className="ml-auto text-sm bg-white/20 px-3 py-1 rounded-2xl">or $49.99/year</span>
             </div>
+
             <ul className="space-y-4 mb-8 text-sm">
               <li>✓ Everything in Free</li>
               <li>✓ Unlimited enhanced Rocket Reader editions</li>
@@ -60,12 +77,16 @@ export default function PremiumPage() {
 
             {user ? (
               isPremium ? (
-                <div className="text-center py-4 bg-white/20 text-white rounded-3xl font-medium">You are already Premium ✓</div>
+                <div className="text-center py-4 bg-white/20 rounded-3xl font-medium">✅ You are Premium!</div>
               ) : (
                 <button onClick={handleSignUp} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg">Upgrade Now – $4.99/mo</button>
               )
             ) : (
               <button onClick={handleSignUp} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg">Sign up with email (magic link)</button>
+            )}
+
+            {user && (
+              <button onClick={handleLogout} className="mt-4 w-full py-3 text-white/80 hover:text-white text-sm">Log out</button>
             )}
           </div>
         </div>
