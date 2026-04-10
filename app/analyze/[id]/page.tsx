@@ -3,7 +3,7 @@
 
 import { useAuth } from '@/components/AuthProvider';
 import { loadBooks } from '@/lib/data';
-import { RocketReader } from '@/components/RocketReader';
+import RocketReader from '@/components/RocketReader';   // ← FIXED: default import (no curly braces)
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -18,7 +18,7 @@ export default function AnalyzePage() {
 
   useEffect(() => {
     if (!isPremium && !loading) {
-      window.location.href = '/premium'; // redirect free users
+      window.location.href = '/premium';
       return;
     }
 
@@ -28,12 +28,17 @@ export default function AnalyzePage() {
       else notFound();
     });
 
-    // TODO: In next step we'll load the real polished HTML from Supabase Storage
-    // For now we show a placeholder so the component renders
-    setHtmlContent('<div class="prose text-center py-12"><h2>🚀 Full Rocket Reader Edition Loading...</h2><p>Toggle Dolch, Fry, POS highlights below.</p></div>');
+    // Placeholder for now — we'll load real polished HTML in the next step
+    setHtmlContent(`
+      <div class="prose max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10 text-white">
+        <h2 class="text-3xl font-bold mb-6">🚀 Full Rocket Reader Edition</h2>
+        <p class="mb-8">This is where your enhanced HTML (with Dolch/Fry/POS toggles) will appear.</p>
+        <p class="text-emerald-400">Toggle highlights • Charts • Word-length distribution • One-click EPUB/PDF</p>
+      </div>
+    `);
   }, [id, isPremium, loading]);
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-xl">Loading premium features...</div>;
   if (!isPremium) return null; // already redirected
 
   return (
@@ -50,7 +55,7 @@ export default function AnalyzePage() {
       </div>
 
       <div className="mt-12 text-center text-sm text-slate-500">
-        Premium feature • Unlimited enhanced editions with sight-word highlights, POS toggles, and downloads
+        Premium feature • Unlimited enhanced editions with sight-word highlights, POS toggles, charts &amp; downloads
       </div>
     </div>
   );
