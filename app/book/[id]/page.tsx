@@ -2,48 +2,16 @@
 import { notFound } from 'next/navigation';
 import { loadBooks } from '@/lib/data';
 import Link from 'next/link';
+import { useAuth } from '@/components/AuthProvider';   // ← new import
+import { RocketReader } from '@/components/RocketReader'; // ← we'll use this later
 
-interface BookPageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function BookStatsPage({ params }: BookPageProps) {
+// This is a Server Component, so we pass auth info via props in the client part below
+export default async function BookStatsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const allBooks = await loadBooks();
   const book = allBooks.find((b) => b.id === id);
 
   if (!book) notFound();
-
-  // Full stats (simulated for now - we'll pull from archive later)
-  const stats = {
-    totalSentences: 1240,
-    avgSentenceLength: 12.4,
-    totalWords: 15376,
-    avgWordLength: 4.2,
-    uniqueWords: 3124,
-
-    dolchPrek: 92.5,
-    dolchKindergarten: 88.5,
-    dolch1st: 85.4,
-    dolch2nd: 78.3,
-    dolch3rd: 71.2,
-
-    posData: [
-      { label: 'Nouns', percent: 42, count: 6460 },
-      { label: 'Verbs', percent: 18, count: 2768 },
-      { label: 'Adjectives', percent: 15, count: 2306 },
-      { label: 'Adverbs', percent: 9, count: 1384 },
-      { label: 'Pronouns', percent: 8, count: 1230 },
-      { label: 'Prepositions', percent: 5, count: 769 },
-      { label: 'Conjunctions', percent: 3, count: 461 },
-    ],
-
-    wordLengths: {
-      len03: 1240, len04: 980, len05: 1450, len06: 1320, len07: 980,
-      len08: 760, len09: 650, len10: 540, len11: 420, len12: 310,
-      len13: 240, len14: 180, len15: 110,
-    }
-  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
@@ -51,13 +19,12 @@ export default async function BookStatsPage({ params }: BookPageProps) {
         ← Back to Library
       </Link>
 
-      {/* Title & Author */}
       <div className="mb-10">
         <h1 className="text-4xl font-bold text-slate-900">{book.title}</h1>
         {book.author && <p className="text-slate-600 text-xl mt-2">{book.author}</p>}
       </div>
 
-      {/* The Big 4 */}
+      {/* The Big 4 metrics (always visible) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
         <div className="bg-white p-6 rounded-3xl border border-slate-100 text-center">
           <div className="text-sm text-emerald-600 font-medium">Dolch Density</div>
@@ -162,14 +129,40 @@ export default async function BookStatsPage({ params }: BookPageProps) {
         </div>
       </div>
 
+
+
       <div className="mt-12 text-center">
-        <a 
-          href={`/analyze/${book.id}`} 
-          className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-10 py-4 rounded-3xl transition text-lg"
-        >
-          Generate Enhanced Rocket Reader Version →
-        </a>
+        {/* This part now checks premium status client-side */}
+        <ClientBookAction id={book.id} />
       </div>
+    </div>
+  );
+}
+
+// Client component that checks auth and shows the right button
+function ClientBookAction({ id }: { id: string }) {
+  const { isPremium } = useAuth();   // ← uses the AuthProvider we added
+
+  if (isPremium) {
+    return (
+      <a
+        href={`/analyze/${id}`}
+        className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-10 py-4 rounded-3xl transition text-lg"
+      >
+        Open Full Rocket Reader Edition →
+      </a>
+    );
+  }
+
+  return (
+    <div className="text-center">
+      <p className="text-slate-600 mb-4">This is a Sample preview.</p>
+      <a
+        href={`/premium`}
+        className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-10 py-4 rounded-3xl transition text-lg"
+      >
+        Upgrade to Premium to unlock full interactive edition
+      </a>
     </div>
   );
 }
