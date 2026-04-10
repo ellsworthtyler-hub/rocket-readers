@@ -38,9 +38,8 @@ export async function loadBooks(): Promise<Book[]> {
       dialog_ratio,
       flesch_grade
     `)
-    .not("dolch_density", "is", null)           // only books with real metrics
-    .order("dolch_density", { ascending: false })
-    .limit(10000);
+    .not("dolch_density", "is", null)
+    .order("dolch_density", { ascending: false });
 
   if (error) {
     console.error("Supabase error:", error);
@@ -51,18 +50,13 @@ export async function loadBooks(): Promise<Book[]> {
     id: row.id?.toString() || "",
     title: row.title || "Untitled",
     author: row.author || "Unknown",
-
     dolch: parseFloat(row.dolch_density || "0").toFixed(1),
     fry: parseFloat(row.fry_density || "0").toFixed(1),
-
     dialogRatio: parseFloat(row.dialog_ratio || "0").toFixed(1),
     fleschGrade: parseFloat(row.flesch_grade || "0").toFixed(1),
   }));
 
-  console.log(`✅ Loaded ${booksCache.length} books with REAL metrics. Sample:`, 
-    booksCache[0] ? { title: booksCache[0].title.slice(0,60)+"…", dolch: booksCache[0].dolch + "%" } : "No books"
-  );
-
+  console.log(`✅ Loaded ${booksCache.length} books with REAL metrics (full archive)`);
   return booksCache;
 }
 
