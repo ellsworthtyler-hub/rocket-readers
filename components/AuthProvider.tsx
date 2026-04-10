@@ -28,13 +28,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
+        // @ts-ignore - Supabase does not auto-generate types for custom tables
         const { data: profile } = await supabase
           .from('profiles')
           .select('is_premium')
           .eq('id', currentUser.id)
           .single();
 
-        setIsPremium(profile?.is_premium ?? false);
+        setIsPremium(!!profile?.is_premium);
       } else {
         setIsPremium(false);
       }
@@ -48,12 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
+        // @ts-ignore - Supabase does not auto-generate types for custom tables
         const { data: profile } = await supabase
           .from('profiles')
           .select('is_premium')
           .eq('id', currentUser.id)
           .single();
-        setIsPremium(profile?.is_premium ?? false);
+        setIsPremium(!!profile?.is_premium);
       } else {
         setIsPremium(false);
       }
