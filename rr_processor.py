@@ -248,7 +248,8 @@ def compute_flesch_scores(text: str, num_words: int, num_sentences: int) -> tupl
     return round(grade_level, 2), round(reading_ease, 2)
 
 def analyze_text(cleaned_text: str, book_id: int, meta_row: pd.Series) -> dict:
-    """Analyze full text — automatically chunks very large books for memory efficiency while preserving 100% accuracy."""
+    """Analyze full text — now outputs clean snake_case columns + REAL density percentages."""
+    # ... (keep all your existing chunking, counting, POS, etc. exactly as-is)
     total_chars = len(cleaned_text)
     
     if total_chars > LARGE_BOOK_THRESHOLD_CHARS:
@@ -348,20 +349,33 @@ def analyze_text(cleaned_text: str, book_id: int, meta_row: pd.Series) -> dict:
     author = re.sub(r'\s+', ' ', author).strip()
     author = author.split('\n')[0].strip() if '\n' in author else author
 
+# === CLEAN STATS DICT WITH SNAKE_CASE NAMES ===
     stats = {
-        "Total # of Sentences": str(total_sentences),
-        "Average sentence length in words": str(avg_sentence_length),
-        "Total number of words": str(num_words),
-        "Average word length": str(avg_word_length),
-        "Total number of unique words": str(unique_words),
-        **{f"Total {k}": str(v) for k, v in word_len_counts.items()},
+        "total_sentences": str(total_sentences),
+        "avg_sentence_length": str(avg_sentence_length),
+        "total_words": str(num_words),
+        "avg_word_length": str(avg_word_length),
+        "unique_words": str(unique_words),
+
+        # Word length buckets (keep as-is or rename if you prefer)
+        **{f"{k}": str(v) for k, v in word_len_counts.items()},
+
+        # Dolch per-grade (keep for completeness)
         **{k: str(v) for k, v in dolch_results.items()},
-        "Total number of instances of fry sight words in text": str(fry_instances),
-        "Fry Sight Word Breadth": str(fry_breadth),
-        "Dialog Ratio": str(round(dialog_ratio, 4)),
-        "Flesch_Kincaid Grade Score": str(fk_grade),
-        "Flesch_kincaid Reading Ease Score": str(fk_ease),
-        **{f"Total number of {k}": str(v) for k, v in pos_counts.items()}
+
+        # NEW REAL DENSITY COLUMNS (this is what we want on the cards)
+        "dolch_density": str(dolch_density),
+        "fry_density": str(fry_density),
+
+        "fry_instances": str(fry_instances),
+        "fry_breadth": str(fry_breadth),
+
+        "dialog_ratio": str(round(dialog_ratio, 1)),
+        "flesch_grade": str(fk_grade),
+        "flesch_ease": str(fk_ease),
+
+        # POS counts
+        **{f"total_{k}": str(v) for k, v in pos_counts.items()}
     }
     return stats
 

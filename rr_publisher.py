@@ -268,71 +268,32 @@ def generate_html(book_id: int, tagged_html: str, title: str, author: str) -> st
     return html
 
 def main():
-    import sys
+    logger.info("=== Rocket Readers Publisher - Final POS Fix ===")
 
-    if len(sys.argv) > 1:
-        # === WEB UPLOAD MODE - used by Analyze Any Book ===
-        file_path = sys.argv[1]
-        logger.info(f"Publishing uploaded file: {file_path}")
+    with open(TO_PUBLISH_PATH, "r") as f:
+        book_ids = [int(line.strip()) for line in f if line.strip().isdigit()]
 
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                text = f.read()
-        except Exception as e:
-            logger.error(f"Failed to read file: {e}")
-            print("<p>Error loading text</p>")
-            return
+    if not book_ids:
+        logger.info("No books to publish.")
+        return
 
-        title, author = "Uploaded Book", "User Upload"
+    for book_id in book_ids:
+        logger.info(f"Publishing Book #{book_id}...")
+        text = load_cleaned_text(book_id)
+        if not text:
+            continue
+
+        title, author = get_metadata(book_id)
         tagged = tag_text(text)
-        html = generate_html(book_id=0, tagged_html=tagged, title=title, author=author)
+        html = generate_html(book_id, tagged, title, author)
 
-        # FIXED: Safe UTF-8 output (no more encoding crash)
-        sys.stdout.buffer.write((html + "\n").encode("utf-8"))
-        logger.info("✅ Publisher finished - HTML sent to frontend")
-    else:
-        # Keep your original menu mode
-        logger.info("=== Rocket Readers Publisher - Final POS Fix ===")
-        if len(sys.argv) > 1:
-            # === WEB UPLOAD MODE ===
-            file_path = sys.argv[1]
-            logger.info(f"Publishing uploaded file: {file_path}")
-            
-            with open(file_path, "r", encoding="utf-8") as f:
-                text = f.read()
-            
-            title, author = "Uploaded Book", "User Upload"
-            tagged = tag_text(text)
-            html = generate_html(book_id=0, tagged_html=tagged, title=title, author=author)
-            
-            print(html)   # ← This is what the frontend displays as the Rocket Reader
-            logger.info("✅ Publisher finished — HTML sent to web frontend")
-        else:
-            logger.info("=== Rocket Readers Publisher - Final POS Fix ===")
-            with open(TO_PUBLISH_PATH, "r") as f:
-                book_ids = [int(line.strip()) for line in f if line.strip().isdigit()]
+        output_path = os.path.join(PUBLISHED_DIR, f"{book_id}_reader.html")
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(html)
 
-            if not book_ids:
-                logger.info("No books to publish.")
-                return
+        logger.info(f"✅ Saved: {output_path}")
 
-            for book_id in book_ids:
-                logger.info(f"Publishing Book #{book_id}...")
-                text = load_cleaned_text(book_id)
-                if not text:
-                    continue
-
-                title, author = get_metadata(book_id)
-                tagged = tag_text(text)
-                html = generate_html(book_id, tagged, title, author)
-
-                output_path = os.path.join(PUBLISHED_DIR, f"{book_id}_reader.html")
-                with open(output_path, "w", encoding="utf-8") as f:
-                    f.write(html)
-
-                logger.info(f"✅ Saved: {output_path}")
-
-            logger.info("=== All books published successfully! ===")
+    logger.info("=== All books published successfully! ===")
 
 if __name__ == "__main__":
     main()

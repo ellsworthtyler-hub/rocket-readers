@@ -1,0 +1,70 @@
+ GET /search 200 in 28ms (next.js: 4ms, application-code: 24ms)
+🔍 Loading library from Supabase archive table...
+✅ Loaded 10000 books with REAL metrics. Sample: {
+  title: 'Jack Mason, the Old Sailor...',
+  dolch: '69.5%',
+  fry: '86.3%'
+}
+Error: Route "/book/[id]" used `params.id`. `params` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at <unknown> (app\book\[id]\page.tsx:12:53)
+    at Array.find (<anonymous>)
+    at BookStatsPage (app\book\[id]\page.tsx:12:25)
+  10 | ...StatsPage({ params }: BookPageProps) {
+  11 | ...();
+> 12 | ...> b.id === params.id);
+     |                      ^
+  13 | ...
+  14 | ...
+  15 | ...
+ GET /book/73602 200 in 2.2s (next.js: 99ms, application-code: 2.1s)
+======================================================
+C:\Users\ellsw\rocket-readers>rmdir /s /q .next
+
+C:\Users\ellsw\rocket-readers>npm run dev
+
+> rocket-readers@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.2 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.73:3000
+- Environments: .env.local
+✓ Ready in 401ms
+
+🔍 Loading library from Supabase archive table...
+🔍 Loading library from Supabase archive table...
+✅ Loaded 10000 books with REAL metrics. Sample: {
+  title: 'Jack Mason, the Old Sailor...',
+  dolch: '69.5%',
+  fry: '86.3%'
+}
+ GET / 200 in 1892ms (next.js: 840ms, application-code: 1052ms)
+✅ Loaded 10000 books with REAL metrics. Sample: {
+  title: 'Jack Mason, the Old Sailor...',
+  dolch: '69.5%',
+  fry: '86.3%'
+}
+Error: Route "/book/[id]" used `params.id`. `params` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at <unknown> (app\book\[id]\page.tsx:12:53)
+    at Array.find (<anonymous>)
+    at BookStatsPage (app\book\[id]\page.tsx:12:25)
+  10 | ...StatsPage({ params }: BookPageProps) {
+  11 | ...();
+> 12 | ...> b.id === params.id);
+     |                      ^
+  13 | ...
+  14 | ...
+  15 | ...
+📦 Returning 10000 books from cache
+Error: Route "/book/[id]" used `params.id`. `params` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at <unknown> (app\book\[id]\page.tsx:12:53)
+    at Array.find (<anonymous>)
+    at BookStatsPage (app\book\[id]\page.tsx:12:25)
+  10 | ...StatsPage({ params }: BookPageProps) {
+  11 | ...();
+> 12 | ...> b.id === params.id);
+     |                      ^
+  13 | ...
+  14 | ...
+  15 | ...
+ GET /book/71271 200 in 280ms (next.js: 8ms, application-code: 272ms)
