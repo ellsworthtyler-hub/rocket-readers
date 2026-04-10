@@ -1,7 +1,7 @@
 // app/search/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { BookCard } from "@/components/BookCard";
 import { loadBooks } from "@/lib/data";
 import type { Book } from "@/lib/data";
@@ -65,7 +65,6 @@ export default function SearchPage() {
     <div className="max-w-7xl mx-auto px-6 py-12">
       <h1 className="text-5xl font-bold text-center mb-10">Search Library</h1>
 
-      {/* Dark search bar (matches your screenshot) */}
       <div className="max-w-2xl mx-auto mb-8">
         <input
           type="text"
@@ -76,7 +75,6 @@ export default function SearchPage() {
         />
       </div>
 
-      {/* All 4 filters restored */}
       <div className="flex flex-wrap justify-center gap-4 mb-12">
         <div>
           <label className="block text-xs text-slate-400 mb-1 text-center">Min Dolch %</label>
@@ -87,7 +85,6 @@ export default function SearchPage() {
             <option value="90">90%</option>
           </select>
         </div>
-
         <div>
           <label className="block text-xs text-slate-400 mb-1 text-center">Min Fry %</label>
           <select value={minFry} onChange={(e) => setMinFry(e.target.value)} className="bg-slate-900 border border-white/20 rounded-3xl px-6 py-3 text-white focus:border-emerald-400 focus:outline-none">
@@ -97,7 +94,6 @@ export default function SearchPage() {
             <option value="90">90%</option>
           </select>
         </div>
-
         <div>
           <label className="block text-xs text-slate-400 mb-1 text-center">Max Flesch Grade</label>
           <select value={maxFlesch} onChange={(e) => setMaxFlesch(e.target.value)} className="bg-slate-900 border border-white/20 rounded-3xl px-6 py-3 text-white focus:border-emerald-400 focus:outline-none">
@@ -107,7 +103,6 @@ export default function SearchPage() {
             <option value="2">≤ 2nd</option>
           </select>
         </div>
-
         <div>
           <label className="block text-xs text-slate-400 mb-1 text-center">Min Dialogue %</label>
           <select value={minDialog} onChange={(e) => setMinDialog(e.target.value)} className="bg-slate-900 border border-white/20 rounded-3xl px-6 py-3 text-white focus:border-emerald-400 focus:outline-none">
@@ -119,7 +114,6 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Results header */}
       <div className="flex items-center justify-between mb-6 px-2">
         <p className="text-slate-400">
           Showing <span className="font-semibold text-emerald-700">{startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, totalFiltered)}</span> of <span className="font-semibold">{totalFiltered.toLocaleString()}</span> books

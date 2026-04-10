@@ -8,6 +8,7 @@ let supabaseInstance: ReturnType<typeof createClient> | null = null;
 export const supabase = supabaseInstance || (supabaseInstance = createClient(supabaseUrl, supabaseAnonKey));
 
 let booksCache: Book[] = [];
+let lastLoadTime = 0;   // ← forces fresh data after deploy
 
 export interface Book {
   id: string;
@@ -20,12 +21,13 @@ export interface Book {
 }
 
 export async function loadBooks(): Promise<Book[]> {
-  if (booksCache.length > 0) {
+  const now = Date.now();
+  if (booksCache.length > 0 && now - lastLoadTime < 60000) {  // 60-second cache
     console.log(`📦 Returning ${booksCache.length} books from cache`);
     return booksCache;
   }
 
-  console.log("🔍 Loading library from Supabase archive table...");
+  console.log("🔍 Loading FULL library from Supabase archive table...");
 
   const { data, error } = await supabase
     .from("archive")
@@ -56,7 +58,8 @@ export async function loadBooks(): Promise<Book[]> {
     fleschGrade: parseFloat(row.flesch_grade || "0").toFixed(1),
   }));
 
-  console.log(`✅ Loaded ${booksCache.length} books with REAL metrics (full archive)`);
+  lastLoadTime = now;
+  console.log(`✅ LOADED FULL ARCHIVE: ${booksCache.length.toLocaleString()} books with REAL metrics`);
   return booksCache;
 }
 
