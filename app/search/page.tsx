@@ -12,6 +12,7 @@ export default function SearchPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [minDolch, setMinDolch] = useState("0");
@@ -19,12 +20,17 @@ export default function SearchPage() {
   const [maxFlesch, setMaxFlesch] = useState("12");
   const [minDialog, setMinDialog] = useState("0");
 
+  const fetchBooks = async () => {
+    setLoading(true);
+    const loaded = await loadBooks();
+    setBooks(loaded);
+    setFilteredBooks(loaded);
+    setCurrentPage(1);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    loadBooks().then((loaded) => {
-      setBooks(loaded);
-      setFilteredBooks(loaded);
-      setCurrentPage(1);
-    });
+    fetchBooks();
   }, []);
 
   useEffect(() => {
@@ -76,6 +82,7 @@ export default function SearchPage() {
       </div>
 
       <div className="flex flex-wrap justify-center gap-4 mb-12">
+        {/* All 4 filters — unchanged */}
         <div>
           <label className="block text-xs text-slate-400 mb-1 text-center">Min Dolch %</label>
           <select value={minDolch} onChange={(e) => setMinDolch(e.target.value)} className="bg-slate-900 border border-white/20 rounded-3xl px-6 py-3 text-white focus:border-emerald-400 focus:outline-none">
@@ -118,11 +125,18 @@ export default function SearchPage() {
         <p className="text-slate-400">
           Showing <span className="font-semibold text-emerald-700">{startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, totalFiltered)}</span> of <span className="font-semibold">{totalFiltered.toLocaleString()}</span> books
         </p>
-        <div className="flex items-center gap-3">
-          <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="px-5 py-2 bg-white border border-slate-200 hover:border-emerald-300 disabled:opacity-40 rounded-2xl font-medium transition">← Previous</button>
-          <span className="font-medium text-slate-600">Page {currentPage} of {totalPages}</span>
-          <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="px-5 py-2 bg-white border border-slate-200 hover:border-emerald-300 disabled:opacity-40 rounded-2xl font-medium transition">Next →</button>
-        </div>
+        <button
+          onClick={fetchBooks}
+          className="px-4 py-2 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-2xl font-medium"
+        >
+          🔄 Force Refresh Library
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="px-5 py-2 bg-white border border-slate-200 hover:border-emerald-300 disabled:opacity-40 rounded-2xl font-medium transition">← Previous</button>
+        <span className="font-medium text-slate-600">Page {currentPage} of {totalPages}</span>
+        <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="px-5 py-2 bg-white border border-slate-200 hover:border-emerald-300 disabled:opacity-40 rounded-2xl font-medium transition">Next →</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

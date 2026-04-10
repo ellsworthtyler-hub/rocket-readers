@@ -7,9 +7,6 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 let supabaseInstance: ReturnType<typeof createClient> | null = null;
 export const supabase = supabaseInstance || (supabaseInstance = createClient(supabaseUrl, supabaseAnonKey));
 
-let booksCache: Book[] = [];
-let lastLoadTime = 0;   // ← forces fresh data after deploy
-
 export interface Book {
   id: string;
   title: string;
@@ -20,14 +17,9 @@ export interface Book {
   fleschGrade: string;
 }
 
+// NO CACHE — forces full load every time (we’ll re-add smart cache later)
 export async function loadBooks(): Promise<Book[]> {
-  const now = Date.now();
-  if (booksCache.length > 0 && now - lastLoadTime < 60000) {  // 60-second cache
-    console.log(`📦 Returning ${booksCache.length} books from cache`);
-    return booksCache;
-  }
-
-  console.log("🔍 Loading FULL library from Supabase archive table...");
+  console.log("🔍 Loading FULL library from Supabase archive table... (no cache)");
 
   const { data, error } = await supabase
     .from("archive")
@@ -48,7 +40,7 @@ export async function loadBooks(): Promise<Book[]> {
     return [];
   }
 
-  booksCache = (data || []).map((row: any) => ({
+  const books = (data || []).map((row: any) => ({
     id: row.id?.toString() || "",
     title: row.title || "Untitled",
     author: row.author || "Unknown",
@@ -58,9 +50,8 @@ export async function loadBooks(): Promise<Book[]> {
     fleschGrade: parseFloat(row.flesch_grade || "0").toFixed(1),
   }));
 
-  lastLoadTime = now;
-  console.log(`✅ LOADED FULL ARCHIVE: ${booksCache.length.toLocaleString()} books with REAL metrics`);
-  return booksCache;
+  console.log(`✅ LOADED FULL ARCHIVE: ${books.length.toLocaleString()} books with REAL metrics`);
+  return books;
 }
 
 export async function getBookById(id: string): Promise<Book | null> {
