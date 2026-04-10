@@ -2,8 +2,7 @@
 import { notFound } from 'next/navigation';
 import { loadBooks } from '@/lib/data';
 import Link from 'next/link';
-import { useAuth } from '@/components/AuthProvider';
-import RocketReader from '@/components/RocketReader';   // ← FIXED: default import (no curly braces)
+import ClientBookAction from './ClientBookAction';   // ← new client-only file
 
 export default async function BookStatsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,7 +22,7 @@ export default async function BookStatsPage({ params }: { params: Promise<{ id: 
         {book.author && <p className="text-slate-600 text-xl mt-2">{book.author}</p>}
       </div>
 
-      {/* The Big 4 */}
+      {/* The Big 4 metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
         <div className="bg-white p-6 rounded-3xl border border-slate-100 text-center">
           <div className="text-sm text-emerald-600 font-medium">Dolch Density</div>
@@ -43,40 +42,11 @@ export default async function BookStatsPage({ params }: { params: Promise<{ id: 
         </div>
       </div>
 
-      {/* Core Text Metrics + Dolch Breadth + POS + Word Length (unchanged from your original) */}
-      {/* ... (keep all your existing stats, tables, and charts here) ... */}
+      {/* Keep all your existing Core Metrics, Dolch Breadth, POS table, Word Length chart here */}
 
       <div className="mt-12 text-center">
         <ClientBookAction id={book.id} />
       </div>
-    </div>
-  );
-}
-
-// Client component that checks premium status
-function ClientBookAction({ id }: { id: string }) {
-  const { isPremium } = useAuth();
-
-  if (isPremium) {
-    return (
-      <a
-        href={`/analyze/${id}`}
-        className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-10 py-4 rounded-3xl transition text-lg"
-      >
-        Open Full Rocket Reader Edition →
-      </a>
-    );
-  }
-
-  return (
-    <div className="text-center">
-      <p className="text-slate-600 mb-4">This is a Sample preview.</p>
-      <a
-        href="/premium"
-        className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-10 py-4 rounded-3xl transition text-lg"
-      >
-        Upgrade to Premium to unlock full interactive edition
-      </a>
     </div>
   );
 }

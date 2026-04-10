@@ -1,82 +1,38 @@
-C:\Users\ellsw\rocket-readers>rmdir /s /q .next
-
-C:\Users\ellsw\rocket-readers>npm run dev
-
-> rocket-readers@0.1.0 dev
-> next dev
-
-▲ Next.js 16.2.2 (Turbopack)
-- Local:         http://localhost:3000
-- Network:       http://192.168.1.73:3000
-- Environments: .env.local
-✓ Ready in 386ms
-
- GET /search 200 in 1799ms (next.js: 1592ms, application-code: 207ms)
-✓ Compiled in 93ms
-[browser] ./lib/data.ts:59:3
-Return statement is not allowed here
-  57 |   );
-  58 |
-> 59 |   return booksCache;
-     |   ^^^^^^^^^^^^^^^^^^
-  60 | }
-  61 |
-  62 | export async function getBookById(id: string): Promise<Book | null> {
-
-Parsing ecmascript source code failed
-
-Import traces:
-  Client Component Browser:
-    ./lib/data.ts [Client Component Browser]
-    ./app/search/page.tsx [Client Component Browser]
-    ./app/search/page.tsx [Server Component]
-
-  Client Component SSR:
-    ./lib/data.ts [Client Component SSR]
-    ./app/search/page.tsx [Client Component SSR]
-    ./app/search/page.tsx [Server Component]
-[browser] ./lib/data.ts:59:3
-Return statement is not allowed here
-  57 |   );
-  58 |
-> 59 |   return booksCache;
-     |   ^^^^^^^^^^^^^^^^^^
-  60 | }
-  61 |
-  62 | export async function getBookById(id: string): Promise<Book | null> {
-
-Parsing ecmascript source code failed
-
-Import traces:
-  Client Component Browser:
-    ./lib/data.ts [Client Component Browser]
-    ./app/search/page.tsx [Client Component Browser]
-    ./app/search/page.tsx [Server Component]
-
-  Client Component SSR:
-    ./lib/data.ts [Client Component SSR]
-    ./app/search/page.tsx [Client Component SSR]
-    ./app/search/page.tsx [Server Component]
-✓ Compiled in 18ms
-[browser] ./lib/data.ts:59:3
-Return statement is not allowed here
-  57 |   );
-  58 |
-> 59 |   return booksCache;
-     |   ^^^^^^^^^^^^^^^^^^
-  60 | }
-  61 |
-  62 | export async function getBookById(id: string): Promise<Book | null> {
-
-Parsing ecmascript source code failed
-
-Import traces:
-  Client Component Browser:
-    ./lib/data.ts [Client Component Browser]
-    ./app/search/page.tsx [Client Component Browser]
-    ./app/search/page.tsx [Server Component]
-
-  Client Component SSR:
-    ./lib/data.ts [Client Component SSR]
-    ./app/search/page.tsx [Client Component SSR]
-    ./app/search/page.tsx [Server Component]
+03:41:58.680 Running build in Washington, D.C., USA (East) – iad1
+03:41:58.681 Build machine configuration: 2 cores, 8 GB
+03:41:58.809 Cloning github.com/ellsworthtyler-hub/rocket-readers (Branch: main, Commit: 8570303)
+03:42:03.659 Cloning completed: 4.850s
+03:42:03.839 Restored build cache from previous deployment (2GdGyHMfMzmRXMoJD6hV6mL4smvh)
+03:42:04.131 Running "vercel build"
+03:42:04.776 Vercel CLI 50.42.0
+03:42:05.044 Installing dependencies...
+03:42:06.188 
+03:42:06.188 up to date in 911ms
+03:42:06.189 
+03:42:06.189 144 packages are looking for funding
+03:42:06.189   run `npm fund` for details
+03:42:06.218 Detected Next.js version: 16.2.2
+03:42:06.222 Running "npm run build"
+03:42:06.325 
+03:42:06.325 > rocket-readers@0.1.0 build
+03:42:06.326 > next build
+03:42:06.326 
+03:42:07.054 ▲ Next.js 16.2.2 (Turbopack)
+03:42:07.055 
+03:42:07.088   Creating an optimized production build ...
+03:42:16.412 ✓ Compiled successfully in 9.0s
+03:42:16.414   Running TypeScript ...
+03:42:20.920 Failed to type check.
+03:42:20.920 
+03:42:20.921 ./app/book/[id]/page.tsx:6:10
+03:42:20.921 Type error: Module '"@/components/RocketReader"' has no exported member 'RocketReader'. Did you mean to use 'import RocketReader from "@/components/RocketReader"' instead?
+03:42:20.921 
+03:42:20.921   [90m4 |[0m [36mimport[0m [33mLink[0m [36mfrom[0m [32m'next/link'[0m;
+03:42:20.921   [90m5 |[0m [36mimport[0m { useAuth } [36mfrom[0m [32m'@/components/AuthProvider'[0m;   [90m// ← new import[0m
+03:42:20.921 [31m[1m>[0m [90m6 |[0m [36mimport[0m { [33mRocketReader[0m } [36mfrom[0m [32m'@/components/RocketReader'[0m; [90m// ← we'll use this later[0m
+03:42:20.921   [90m  |[0m          [31m[1m^[0m
+03:42:20.921   [90m7 |[0m
+03:42:20.921   [90m8 |[0m [90m// This is a Server Component, so we pass auth info via props in the client part below[0m
+03:42:20.921   [90m9 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mBookStatsPage[0m({ params }: { params: [33mPromise[0m<{ id: string }> }) {
+03:42:20.952 Next.js build worker exited with code: 1 and signal: null
+03:42:20.986 Error: Command "npm run build" exited with 1
