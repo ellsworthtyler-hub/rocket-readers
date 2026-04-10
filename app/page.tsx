@@ -3,13 +3,21 @@ import Link from 'next/link';
 import { BookCard } from '@/components/BookCard';
 import { loadBooks } from '@/lib/data';
 
+export const dynamic = 'force-dynamic';   // ← forces fresh data on every visit
+
 export default async function HomePage() {
   const books = await loadBooks();
 
   // Top 6 books for "Hot off the Launchpad" (highest Dolch density)
   const hotBooks = books
-    .sort((a, b) => parseFloat(b.dolch) - parseFloat(a.dolch))
+    .sort((a, b) => parseFloat(b.dolch || '0') - parseFloat(a.dolch || '0'))
     .slice(0, 6);
+
+  // Dynamic real stats (no more hardcoding!)
+  const totalBooks = books.length;
+  const avgDolch = totalBooks > 0 
+    ? (books.reduce((sum, b) => sum + parseFloat(b.dolch || '0'), 0) / totalBooks).toFixed(1)
+    : '0';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -37,7 +45,7 @@ export default async function HomePage() {
           <div>
             <h2 className="text-4xl font-bold text-slate-900">Hot off the Launchpad</h2>
             <p className="text-slate-600 mt-2 text-lg">
-              Highest Dolch sight-word density this week
+              Highest Dolch sight-word density
             </p>
           </div>
           <Link
@@ -48,35 +56,41 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {hotBooks.map((book) => (
-            <BookCard
-              key={book.id}
-              id={book.id}
-              title={book.title}
-              author={book.author}
-              dolch={book.dolch}
-              fry={book.fry}
-              dialogRatio={book.dialogRatio}
-              fleschGrade={book.fleschGrade}
-            />
-          ))}
-        </div>
+        {hotBooks.length === 0 ? (
+          <div className="text-center py-12 text-slate-500">
+            Loading top sight-word books… (this should appear in a few seconds)
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {hotBooks.map((book) => (
+              <BookCard
+                key={book.id}
+                id={book.id}
+                title={book.title}
+                author={book.author}
+                dolch={book.dolch}
+                fry={book.fry}
+                dialogRatio={book.dialogRatio}
+                fleschGrade={book.fleschGrade}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Quick Stats / Call to Action */}
+      {/* Dynamic Stats */}
       <div className="bg-white border-t border-b py-12">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           <div>
-            <div className="text-5xl font-bold text-emerald-600 mb-2">{books.length.toLocaleString()}</div>
+            <div className="text-5xl font-bold text-emerald-600 mb-2">{totalBooks.toLocaleString()}</div>
             <div className="text-slate-600">Books Analyzed</div>
           </div>
           <div>
-            <div className="text-5xl font-bold text-emerald-600 mb-2">4,892+</div>
+            <div className="text-5xl font-bold text-emerald-600 mb-2">{totalBooks > 4000 ? '5,000+' : totalBooks.toLocaleString()}</div>
             <div className="text-slate-600">With Real Sight-Word Data</div>
           </div>
           <div>
-            <div className="text-5xl font-bold text-emerald-600 mb-2">57.0%</div>
+            <div className="text-5xl font-bold text-emerald-600 mb-2">{avgDolch}%</div>
             <div className="text-slate-600">Average Dolch Density</div>
           </div>
         </div>

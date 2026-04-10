@@ -4,11 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Singleton client
 let supabaseInstance: ReturnType<typeof createClient> | null = null;
 export const supabase = supabaseInstance || (supabaseInstance = createClient(supabaseUrl, supabaseAnonKey));
-
-// lib/data.ts  ← replace your loadBooks with this exact version
 
 let booksCache: Book[] = [];
 
@@ -16,8 +13,8 @@ export interface Book {
   id: string;
   title: string;
   author?: string;
-  dolch: string;        // e.g. "57.0"
-  fry: string;          // e.g. "71.2"
+  dolch: string;
+  fry: string;
   dialogRatio: string;
   fleschGrade: string;
 }
@@ -41,7 +38,8 @@ export async function loadBooks(): Promise<Book[]> {
       dialog_ratio,
       flesch_grade
     `)
-    .not("dolch_density", "is", null)
+    // ✅ FIXED: More forgiving filter (handles empty strings from CSV import)
+    .not("dolch_density", "eq", "")
     .order("dolch_density", { ascending: false })
     .limit(10000);
 
@@ -66,7 +64,6 @@ export async function loadBooks(): Promise<Book[]> {
     booksCache[0] ? {
       title: booksCache[0].title.slice(0, 60) + "...",
       dolch: booksCache[0].dolch + "%",
-      fry: booksCache[0].fry + "%",
     } : "No books"
   );
 
