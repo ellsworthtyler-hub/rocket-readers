@@ -26,11 +26,11 @@ export default function PremiumPage() {
   const activatePremiumDemo = async () => {
     if (!user) return;
 
-    // Strong type cast to satisfy Supabase + Turbopack
-    const { error } = await supabase
+    // @ts-expect-error - Supabase typing is strict on this table
+    const { error } = await (supabase
       .from('profiles')
       .update({ is_premium: true } as any)
-      .eq('id', user.id);
+      .eq('id', user.id) as any);
 
     if (error) {
       alert('Error: ' + error.message);
