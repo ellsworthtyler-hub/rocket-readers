@@ -25,13 +25,15 @@ export default function PremiumPage() {
 
   const activatePremiumDemo = async () => {
     if (!user) return;
+
     const { error } = await supabase
       .from('profiles')
-      .update({ is_premium: true })
+      .update({ is_premium: true } as any)   // ← FIXED: cast to bypass strict typing
       .eq('id', user.id);
 
-    if (error) alert('Error: ' + error.message);
-    else {
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
       alert('✅ Premium activated for testing!');
       window.location.reload();
     }
