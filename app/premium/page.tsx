@@ -15,15 +15,25 @@ export default function PremiumPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        // ← FIXED: always point to the live site
         emailRedirectTo: 'https://rocket-readers.vercel.app/premium',
       },
     });
 
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      alert('Magic link sent! Check your email (including spam).');
+    if (error) alert('Error: ' + error.message);
+    else alert('Magic link sent! Check your email.');
+  };
+
+  const activatePremiumDemo = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_premium: true })
+      .eq('id', user.id);
+
+    if (error) alert('Error: ' + error.message);
+    else {
+      alert('✅ Premium activated for testing!');
+      window.location.reload();
     }
   };
 
@@ -39,6 +49,12 @@ export default function PremiumPage() {
           <h1 className="text-5xl font-bold mb-4">Unlock Rocket Reader Premium</h1>
           <p className="text-xl text-slate-600">Enhanced editions with sight-word highlights, charts, and downloads</p>
         </div>
+
+        {user && (
+          <div className="text-center mb-8 text-sm">
+            Logged in as <span className="font-medium">{user.email}</span>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
           {/* Free Tier */}
@@ -60,7 +76,7 @@ export default function PremiumPage() {
             <div className="absolute -top-3 right-6 bg-amber-400 text-emerald-900 text-xs font-bold px-4 py-1 rounded-3xl">RECOMMENDED</div>
             <h2 className="text-2xl font-semibold mb-2">Premium</h2>
             <p className="opacity-90 mb-6">Full enhanced readers</p>
-            
+
             <div className="flex items-baseline gap-2 mb-8">
               <span className="text-6xl font-bold">$4.99</span>
               <span className="text-xl opacity-75">/mo</span>
@@ -77,16 +93,30 @@ export default function PremiumPage() {
 
             {user ? (
               isPremium ? (
-                <div className="text-center py-4 bg-white/20 rounded-3xl font-medium">✅ You are Premium!</div>
+                <div className="text-center py-6 bg-white/20 rounded-3xl font-semibold text-xl">
+                  ✅ You are Premium!
+                </div>
               ) : (
-                <button onClick={handleSignUp} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg">Upgrade Now – $4.99/mo</button>
+                <>
+                  <button
+                    onClick={activatePremiumDemo}
+                    className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg mb-4"
+                  >
+                    Make me Premium (demo / testing)
+                  </button>
+                  <button onClick={handleSignUp} className="w-full py-3 text-white/80 hover:text-white text-sm">
+                    Resend magic link
+                  </button>
+                </>
               )
             ) : (
-              <button onClick={handleSignUp} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg">Sign up with email (magic link)</button>
+              <button onClick={handleSignUp} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg">
+                Sign up with email (magic link)
+              </button>
             )}
 
             {user && (
-              <button onClick={handleLogout} className="mt-4 w-full py-3 text-white/80 hover:text-white text-sm">Log out</button>
+              <button onClick={handleLogout} className="mt-6 w-full py-3 text-white/80 hover:text-white text-sm">Log out</button>
             )}
           </div>
         </div>
