@@ -38,8 +38,7 @@ export async function loadBooks(): Promise<Book[]> {
       dialog_ratio,
       flesch_grade
     `)
-    // ✅ FIXED: More forgiving filter (handles empty strings from CSV import)
-    .not("dolch_density", "eq", "")
+    .not("dolch_density", "is", null)           // only books with real metrics
     .order("dolch_density", { ascending: false })
     .limit(10000);
 
@@ -61,10 +60,7 @@ export async function loadBooks(): Promise<Book[]> {
   }));
 
   console.log(`✅ Loaded ${booksCache.length} books with REAL metrics. Sample:`, 
-    booksCache[0] ? {
-      title: booksCache[0].title.slice(0, 60) + "...",
-      dolch: booksCache[0].dolch + "%",
-    } : "No books"
+    booksCache[0] ? { title: booksCache[0].title.slice(0,60)+"…", dolch: booksCache[0].dolch + "%" } : "No books"
   );
 
   return booksCache;
