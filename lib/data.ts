@@ -17,9 +17,8 @@ export interface Book {
   fleschGrade: string;
 }
 
-// NO CACHE — forces full load every time (we’ll re-add smart cache later)
 export async function loadBooks(): Promise<Book[]> {
-  console.log("🔍 Loading FULL library from Supabase archive table... (no cache)");
+  console.log("🔍 Loading FULL library from Supabase archive table...");
 
   const { data, error } = await supabase
     .from("archive")
@@ -33,7 +32,8 @@ export async function loadBooks(): Promise<Book[]> {
       flesch_grade
     `)
     .not("dolch_density", "is", null)
-    .order("dolch_density", { ascending: false });
+    .order("dolch_density", { ascending: false })
+    .limit(70000);   // ← THIS IS THE FIX — forces full 61k+
 
   if (error) {
     console.error("Supabase error:", error);
