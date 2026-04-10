@@ -28,14 +28,14 @@ export default function AnalyzePage() {
       else notFound();
     });
 
-    // Real enhanced HTML placeholder — replace this with your polished v2 content later
+    // Placeholder that demonstrates your toggles (replace with real v2 HTML later)
     setHtmlContent(`
       <div class="prose max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10 text-white">
         <h1 class="text-4xl font-bold mb-6 text-emerald-400">🚀 Full Rocket Reader Edition</h1>
-        <p class="mb-8">Toggle the buttons above to highlight Dolch words, Fry words, POS tags, etc.</p>
+        <p class="mb-8">Toggle the buttons above to highlight Dolch words, Fry words, nouns, verbs, etc.</p>
         <div id="reader-content" class="mt-8 text-slate-100">
           <p>Your polished HTML from rr_publisher.py will appear here.</p>
-          <p>All words are already wrapped with the correct classes for sight-word and POS highlighting.</p>
+          <p>All words are already wrapped with the correct sight-word and POS classes — exactly as your Python scripts created it.</p>
         </div>
       </div>
     `);
