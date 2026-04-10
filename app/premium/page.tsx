@@ -26,9 +26,10 @@ export default function PremiumPage() {
   const activatePremiumDemo = async () => {
     if (!user) return;
 
+    // @ts-ignore - Supabase typing is strict on this table
     const { error } = await supabase
       .from('profiles')
-      .update({ is_premium: true } as any)   // ← FIXED: cast to bypass strict typing
+      .update({ is_premium: true })
       .eq('id', user.id);
 
     if (error) {
