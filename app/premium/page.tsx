@@ -23,23 +23,6 @@ export default function PremiumPage() {
     else alert('Magic link sent! Check your email.');
   };
 
-  const activatePremiumDemo = async () => {
-    if (!user) return;
-
-    // @ts-ignore - Supabase typing is strict on this table
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_premium: true } as any)
-      .eq('id', user.id);
-
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      alert('✅ Premium activated for testing!');
-      window.location.reload();
-    }
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = '/';
@@ -100,17 +83,9 @@ export default function PremiumPage() {
                   ✅ You are Premium!
                 </div>
               ) : (
-                <>
-                  <button
-                    onClick={activatePremiumDemo}
-                    className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg mb-4"
-                  >
-                    Make me Premium (demo / testing)
-                  </button>
-                  <button onClick={handleSignUp} className="w-full py-3 text-white/80 hover:text-white text-sm">
-                    Resend magic link
-                  </button>
-                </>
+                <button onClick={handleSignUp} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg">
+                  Sign up with email (magic link)
+                </button>
               )
             ) : (
               <button onClick={handleSignUp} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg">
