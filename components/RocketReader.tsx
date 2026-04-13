@@ -1,6 +1,7 @@
 // components/RocketReader.tsx
 'use client';
-import { useEffect, useRef } from "react";
+
+import { useEffect, useRef } from 'react';
 
 interface RocketReaderProps {
   html: string;
@@ -12,69 +13,48 @@ export default function RocketReader({ html }: RocketReaderProps) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear previous content
-    containerRef.current.innerHTML = html;
+    const container = containerRef.current;
+    container.innerHTML = html;
 
-    // Create a single script with defensive checks
-    const script = document.createElement("script");
-    script.textContent = `
-      // Prevent duplicate declarations
-      if (typeof window.activePOS === "undefined") {
-        window.activePOS = new Set();
-        window.activeDolch = new Set();
-      }
+    // Make toggle functions available globally for the inline onclick handlers from rr_publisher.py
+    (window as any).toggleFeature = (feature: string) => {
+      const buttons = container.querySelectorAll(`button[onclick*="toggleFeature('${feature}'"]`);
+      const isActive = buttons.length > 0 && (buttons[0] as HTMLButtonElement).classList.contains('active');
 
-      window.togglePOS = function(type) {
-        if (window.activePOS.has(type)) {
-          window.activePOS.delete(type);
-        } else {
-          window.activePOS.add(type);
-        }
-        window.updatePOSHighlights();
-      };
+      // Toggle all buttons for this feature
+      buttons.forEach((btn) => {
+        (btn as HTMLButtonElement).classList.toggle('active', !isActive);
+      });
 
-      window.toggleDolch = function() {
-        if (window.activeDolch.size > 0) {
-          window.activeDolch.clear();
-        } else {
-          window.activeDolch.add("dolch");
-        }
-        window.updateDolchHighlights();
-      };
+      // Toggle the actual highlights
+      const elements = container.querySelectorAll(`.${feature}`);
+      elements.forEach((el) => {
+        (el as HTMLElement).classList.toggle('highlight-active', !isActive);
+      });
 
-      window.updatePOSHighlights = function() {
-        document.querySelectorAll('.pos').forEach(el => {
-          const posType = el.getAttribute('data-pos');
-          if (posType && window.activePOS.has(posType)) {
-            el.style.backgroundColor = 'rgba(16, 185, 129, 0.3)';
-          } else {
-            el.style.backgroundColor = '';
-          }
-        });
-      };
-
-      window.updateDolchHighlights = function() {
-        document.querySelectorAll('.dolch').forEach(el => {
-          if (window.activeDolch.size > 0) {
-            el.style.backgroundColor = 'rgba(234, 179, 8, 0.3)';
-          } else {
-            el.style.backgroundColor = '';
-          }
-        });
-      };
-    `;
-
-    document.body.appendChild(script);
-
-    return () => {
-      script.remove();
+      console.log(`Toggled ${feature} — now ${!isActive ? 'active' : 'inactive'}`);
     };
+
+    // Also expose individual toggles if needed
+    (window as any).toggleDolch = () => (window as any).toggleFeature('sight-dolch');
+    (window as any).toggleFry = () => (window as any).toggleFeature('sight-fry');
+    (window as any).togglePOS = (pos: string) => (window as any).toggleFeature(`pos-${pos.toLowerCase()}`);
+
+    // Add click handlers for any buttons that might use data attributes (future-proof)
+    container.querySelectorAll('button[data-feature]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const feature = (btn as HTMLButtonElement).dataset.feature;
+        if (feature) (window as any).toggleFeature(feature);
+      });
+    });
+
   }, [html]);
 
   return (
     <div 
       ref={containerRef}
-      className="prose prose-invert max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10"
+      className="prose max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10 text-slate-100 leading-relaxed"
+      style={{ fontSize: 'var(--reader-font-size, 18px)' }}
     />
   );
 }
