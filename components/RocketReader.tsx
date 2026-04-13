@@ -16,31 +16,37 @@ export default function RocketReader({ html }: RocketReaderProps) {
     const container = containerRef.current;
     container.innerHTML = html;
 
-    // Make toggle functions available globally for the inline onclick handlers from rr_publisher.py
+    // Force clean white reading background + black text
+    container.style.backgroundColor = '#ffffff';
+    container.style.color = '#1f2937';
+    container.style.padding = '2.5rem';
+    container.style.borderRadius = '16px';
+    container.style.boxShadow = '0 10px 15px -3px rgb(0 0 0 / 0.1)';
+
+    // Make toggle functions available globally for rr_publisher.py buttons
     (window as any).toggleFeature = (feature: string) => {
-      const buttons = container.querySelectorAll(`button[onclick*="toggleFeature('${feature}'"]`);
-      const isActive = buttons.length > 0 && (buttons[0] as HTMLButtonElement).classList.contains('active');
+      const isActive = container.querySelectorAll(`.${feature}.highlight-active`).length > 0;
 
-      // Toggle all buttons for this feature
-      buttons.forEach((btn) => {
-        (btn as HTMLButtonElement).classList.toggle('active', !isActive);
-      });
-
-      // Toggle the actual highlights
+      // Toggle highlight class on all matching elements
       const elements = container.querySelectorAll(`.${feature}`);
       elements.forEach((el) => {
         (el as HTMLElement).classList.toggle('highlight-active', !isActive);
       });
 
-      console.log(`Toggled ${feature} — now ${!isActive ? 'active' : 'inactive'}`);
+      // Toggle active state on buttons
+      const buttons = container.querySelectorAll(`button[data-feature="${feature}"], button[onclick*="toggleFeature('${feature}'"]`);
+      buttons.forEach((btn) => {
+        (btn as HTMLButtonElement).classList.toggle('active', !isActive);
+      });
+
+      console.log(`Toggled ${feature} — now ${!isActive ? 'highlighted' : 'normal'}`);
     };
 
-    // Also expose individual toggles if needed
+    // Expose common shortcuts
     (window as any).toggleDolch = () => (window as any).toggleFeature('sight-dolch');
     (window as any).toggleFry = () => (window as any).toggleFeature('sight-fry');
-    (window as any).togglePOS = (pos: string) => (window as any).toggleFeature(`pos-${pos.toLowerCase()}`);
 
-    // Add click handlers for any buttons that might use data attributes (future-proof)
+    // Add click handlers for any data-feature buttons
     container.querySelectorAll('button[data-feature]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const feature = (btn as HTMLButtonElement).dataset.feature;
@@ -53,8 +59,11 @@ export default function RocketReader({ html }: RocketReaderProps) {
   return (
     <div 
       ref={containerRef}
-      className="prose max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10 text-slate-100 leading-relaxed"
-      style={{ fontSize: 'var(--reader-font-size, 18px)' }}
+      className="prose max-w-none leading-relaxed"
+      style={{ 
+        fontSize: 'var(--reader-font-size, 18px)',
+        lineHeight: '1.75'
+      }}
     />
   );
 }
