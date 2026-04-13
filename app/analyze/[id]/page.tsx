@@ -9,39 +9,62 @@ import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function AnalyzePage() {
-  const { isPremium, loading } = useAuth();
+  const { isPremium, loading: authLoading } = useAuth();
   const params = useParams();
   const id = params.id as string;
 
   const [book, setBook] = useState<any>(null);
   const [htmlContent, setHtmlContent] = useState<string>('');
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
   useEffect(() => {
-    if (!isPremium && !loading) {
+    if (!isPremium && !authLoading) {
       window.location.href = '/premium';
       return;
     }
 
+    // Load book metadata
     loadBooks().then((allBooks) => {
       const found = allBooks.find((b: any) => b.id === id);
       if (found) setBook(found);
       else notFound();
     });
 
-    // Placeholder that demonstrates your toggles (replace with real v2 HTML later)
-    setHtmlContent(`
-      <div class="prose max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10 text-white">
-        <h1 class="text-4xl font-bold mb-6 text-emerald-400">🚀 Full Rocket Reader Edition</h1>
-        <p class="mb-8">Toggle the buttons above to highlight Dolch words, Fry words, nouns, verbs, etc.</p>
-        <div id="reader-content" class="mt-8 text-slate-100">
-          <p>Your polished HTML from rr_publisher.py will appear here.</p>
-          <p>All words are already wrapped with the correct sight-word and POS classes — exactly as your Python scripts created it.</p>
-        </div>
-      </div>
-    `);
-  }, [id, isPremium, loading]);
+    // Build exact URL from your screenshot
+    const projectRef = "mckxrkpmlgbgyaujhbuu";   // Confirmed from your Get URL
+    const fileUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/enhanced-readers/${id}.html`;
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-xl">Loading premium features...</div>;
+    console.log("🚀 Attempting to fetch:", fileUrl);
+
+    fetch(fileUrl, { 
+      mode: 'cors',
+      cache: 'no-store'
+    })
+      .then(res => {
+        console.log("Fetch status:", res.status, res.statusText);
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        return res.text();
+      })
+      .then(html => {
+        console.log("✅ Successfully loaded HTML (length:", html.length, "chars)");
+        setHtmlContent(html);
+        setErrorMsg('');
+      })
+      .catch((err) => {
+        console.error("❌ Fetch error:", err);
+        setErrorMsg(`Could not load ${id}.html — check console for details`);
+        setHtmlContent(`
+          <div class="prose max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10 text-white text-center">
+            <h1 class="text-4xl font-bold mb-6 text-red-400">Failed to load Rocket Reader Edition</h1>
+            <p>Tried: ${fileUrl}</p>
+            <p>Error: ${err.message}</p>
+            <p class="mt-8">Try opening the URL directly in a new tab to verify.</p>
+          </div>
+        `);
+      });
+  }, [id, isPremium, authLoading]);
+
+  if (authLoading) return <div className="flex min-h-screen items-center justify-center text-xl">Loading premium features...</div>;
   if (!isPremium) return null;
 
   return (
@@ -50,12 +73,14 @@ export default function AnalyzePage() {
         ← Back to Book Stats
       </Link>
 
-      <h1 className="text-4xl font-bold mb-2">{book?.title}</h1>
+      <h1 className="text-4xl font-bold mb-2">{book?.title || 'Loading...'}</h1>
       {book?.author && <p className="text-slate-600 text-xl">{book.author}</p>}
 
       <div className="mt-8">
         <RocketReader html={htmlContent} />
       </div>
+
+      {errorMsg && <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700">{errorMsg}</div>}
 
       <div className="mt-12 text-center text-sm text-slate-500">
         Premium feature • Unlimited enhanced editions with sight-word highlights, POS toggles, charts &amp; downloads
