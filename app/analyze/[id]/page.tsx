@@ -16,6 +16,7 @@ export default function AnalyzePage() {
   const [book, setBook] = useState<any>(null);
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
 
   useEffect(() => {
     if (!isPremium && !authLoading) {
@@ -30,41 +31,51 @@ export default function AnalyzePage() {
       else notFound();
     });
 
-    // Build exact URL from your screenshot
-    const projectRef = "mckxrkpmlgbgyaujhbuu";   // Confirmed from your Get URL
+    // Exact URL from your Supabase "Get URL"
+    const projectRef = "mckxrkpmlgbgyaujhbuu";   // ← confirmed from your screenshot
     const fileUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/enhanced-readers/${id}.html`;
 
-    console.log("🚀 Attempting to fetch:", fileUrl);
+    console.log("🚀 Attempting to fetch book:", id);
+    console.log("📍 URL:", fileUrl);
 
     fetch(fileUrl, { 
       mode: 'cors',
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: { 'Accept': 'text/html' }
     })
       .then(res => {
-        console.log("Fetch status:", res.status, res.statusText);
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        console.log("📡 Response status:", res.status, res.statusText);
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status} - ${res.statusText}`);
+        }
         return res.text();
       })
       .then(html => {
-        console.log("✅ Successfully loaded HTML (length:", html.length, "chars)");
+        console.log(`✅ SUCCESS! Loaded ${html.length} characters of HTML`);
         setHtmlContent(html);
         setErrorMsg('');
+        setIsLoadingContent(false);
       })
       .catch((err) => {
-        console.error("❌ Fetch error:", err);
-        setErrorMsg(`Could not load ${id}.html — check console for details`);
+        console.error("❌ Fetch failed:", err);
+        setErrorMsg(`Failed to load ${id}.html from Supabase Storage`);
         setHtmlContent(`
           <div class="prose max-w-none bg-slate-900 p-8 rounded-3xl border border-white/10 text-white text-center">
-            <h1 class="text-4xl font-bold mb-6 text-red-400">Failed to load Rocket Reader Edition</h1>
-            <p>Tried: ${fileUrl}</p>
-            <p>Error: ${err.message}</p>
-            <p class="mt-8">Try opening the URL directly in a new tab to verify.</p>
+            <h1 class="text-4xl font-bold mb-6 text-red-400">🚨 Could not load Rocket Reader Edition</h1>
+            <p><strong>Book ID:</strong> ${id}</p>
+            <p><strong>Tried URL:</strong> ${fileUrl}</p>
+            <p><strong>Error:</strong> ${err.message}</p>
+            <p class="mt-6 text-sm">Open the URL directly in a new tab to verify the file exists.</p>
           </div>
         `);
+        setIsLoadingContent(false);
       });
   }, [id, isPremium, authLoading]);
 
-  if (authLoading) return <div className="flex min-h-screen items-center justify-center text-xl">Loading premium features...</div>;
+  if (authLoading || isLoadingContent) {
+    return <div className="flex min-h-screen items-center justify-center text-xl">Loading premium features...</div>;
+  }
+
   if (!isPremium) return null;
 
   return (
@@ -80,7 +91,11 @@ export default function AnalyzePage() {
         <RocketReader html={htmlContent} />
       </div>
 
-      {errorMsg && <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700">{errorMsg}</div>}
+      {errorMsg && (
+        <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-2xl text-red-700">
+          {errorMsg}
+        </div>
+      )}
 
       <div className="mt-12 text-center text-sm text-slate-500">
         Premium feature • Unlimited enhanced editions with sight-word highlights, POS toggles, charts &amp; downloads
