@@ -1,79 +1,157 @@
-// components/RocketReader.tsx
+// app/premium/page.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/data';
+import Link from 'next/link';
 
-interface RocketReaderProps {
-  html: string;
-}
+export default function PremiumPage() {
+  const { user, isPremium, loading } = useAuth();
 
-export default function RocketReader({ html }: RocketReaderProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [fontSize, setFontSize] = useState(18);
+  const handleGoogleSignIn = async () => {
+    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: 'https://rocket-readers.vercel.app/premium' } });
+  };
 
-  useEffect(() => {
-    if (!containerRef.current) return;
+  const handleFacebookSignIn = async () => {
+    await supabase.auth.signInWithOAuth({ provider: 'facebook', options: { redirectTo: 'https://rocket-readers.vercel.app/premium' } });
+  };
 
-    const container = containerRef.current;
-    container.innerHTML = html;
+  const handleXSignIn = async () => {
+    await supabase.auth.signInWithOAuth({ provider: 'twitter', options: { redirectTo: 'https://rocket-readers.vercel.app/premium' } });
+  };
 
-    // Force clean white reading background
-    container.style.backgroundColor = '#ffffff';
-    container.style.color = '#1f2937';
-    container.style.padding = '2.5rem';
-    container.style.borderRadius = '16px';
-    container.style.boxShadow = '0 10px 15px -3px rgb(0 0 0 / 0.1)';
-    container.style.lineHeight = '1.8';
-
-    // Global toggle function for all buttons from rr_publisher.py
-    (window as any).toggleFeature = (feature: string) => {
-      const elements = container.querySelectorAll(`.${feature}`);
-      const isActive = elements.length > 0 && (elements[0] as HTMLElement).classList.contains('highlight-active');
-
-      // Toggle highlight on text
-      elements.forEach((el) => {
-        (el as HTMLElement).classList.toggle('highlight-active', !isActive);
-      });
-
-      // Toggle active state on buttons
-      const buttons = container.querySelectorAll(`button[onclick*="toggleFeature('${feature}'"], button[data-feature="${feature}"]`);
-      buttons.forEach((btn) => {
-        (btn as HTMLButtonElement).classList.toggle('active', !isActive);
-        (btn as HTMLButtonElement).style.backgroundColor = !isActive ? '#10b981' : '';
-      });
-
-      console.log(`Toggled ${feature} — now ${!isActive ? 'highlighted' : 'normal'}`);
-    };
-
-    // Text size controls
-    (window as any).changeTextSize = (delta: number) => {
-      const newSize = Math.max(14, Math.min(28, fontSize + delta));
-      setFontSize(newSize);
-      container.style.fontSize = `${newSize}px`;
-      console.log(`Text size changed to ${newSize}px`);
-    };
-
-    // Expose common shortcuts
-    (window as any).toggleDolch = () => (window as any).toggleFeature('sight-dolch');
-    (window as any).toggleFry = () => (window as any).toggleFeature('sight-fry');
-
-    // Add click handlers for data-feature buttons (future-proof)
-    container.querySelectorAll('button[data-feature]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const feature = (btn as HTMLButtonElement).dataset.feature;
-        if (feature) (window as any).toggleFeature(feature);
-      });
+  const handleMagicLink = async () => {
+    const email = prompt('Enter your email:');
+    if (!email) return;
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: 'https://rocket-readers.vercel.app/premium' },
     });
+    if (error) alert(error.message);
+    else alert('Magic link sent!');
+  };
 
-    // Initial font size
-    container.style.fontSize = `${fontSize}px`;
+  const handleForcePremium = async () => {
+    if (!user) return alert('Not logged in');
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_premium: true })
+      .eq('id', user.id);
+    if (error) alert(error.message);
+    else alert('✅ Forced premium = true. Refresh the page.');
+  };
 
-  }, [html, fontSize]);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  };
+
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-xl">Loading auth state...</div>;
 
   return (
-    <div 
-      ref={containerRef}
-      className="prose max-w-none leading-relaxed"
-    />
+    <div className="min-h-screen bg-slate-50 py-16">
+      <div className="max-w-4xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold mb-4">Unlock Rocket Reader Premium</h1>
+          <p className="text-xl text-slate-600">Enhanced editions with sight-word highlights, charts, and downloads</p>
+        </div>
+
+        {/* DEBUG INFO */}
+        <div className="bg-yellow-100 border border-yellow-300 p-6 rounded-3xl mb-8 text-sm max-w-md mx-auto">
+          <strong>🔍 Debug Info (remove after testing)</strong><br />
+          Logged in: {user ? '✅ Yes' : 'No'}<br />
+          User ID: {user?.id || '—'}<br />
+          Email: {user?.email || '—'}<br />
+          isPremium: <span className={isPremium ? 'text-green-600 font-bold' : 'text-red-600'}>{isPremium ? 'TRUE' : 'FALSE'}</span>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+          {/* Free Tier */}
+          <div className="bg-white rounded-3xl p-8 border border-slate-200">
+            <h2 className="text-2xl font-semibold mb-2">Free</h2>
+            <p className="text-slate-500 mb-6">Discovery &amp; stats</p>
+            <ul className="space-y-4 mb-8 text-sm">
+              <li>✓ Full search library</li>
+              <li>✓ Book statistics</li>
+              <li>✓ Gutenberg links</li>
+              <li>✓ Sample enhanced preview</li>
+            </ul>
+            <div className="text-4xl font-bold mb-8">$0</div>
+            <Link href="/search" className="block text-center py-4 bg-slate-900 text-white rounded-3xl font-medium">Continue Free</Link>
+          </div>
+
+          {/* Premium Tier */}
+          <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-3xl p-8 relative">
+            <div className="absolute -top-3 right-6 bg-amber-400 text-emerald-900 text-xs font-bold px-4 py-1 rounded-3xl">RECOMMENDED</div>
+            <h2 className="text-2xl font-semibold mb-2">Premium</h2>
+            <p className="opacity-90 mb-6">Full enhanced readers</p>
+
+            <div className="flex items-baseline gap-2 mb-8">
+              <span className="text-6xl font-bold">$4.99</span>
+              <span className="text-xl opacity-75">/mo</span>
+              <span className="ml-auto text-sm bg-white/20 px-3 py-1 rounded-2xl">or $49.99/year</span>
+            </div>
+
+            <ul className="space-y-4 mb-8 text-sm">
+              <li>✓ Everything in Free</li>
+              <li>✓ Unlimited enhanced Rocket Reader editions</li>
+              <li>✓ Toggle Dolch / Fry / POS highlights</li>
+              <li>✓ Charts + word-length reports</li>
+              <li>✓ One-click EPUB/PDF download</li>
+            </ul>
+
+            {user ? (
+              isPremium ? (
+                <div className="text-center py-8 bg-white/20 rounded-3xl font-semibold text-2xl border border-white/30">
+                  ✅ You are Premium!
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <button onClick={handleGoogleSignIn} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 hover:bg-emerald-50">
+                    <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                    Sign in with Google
+                  </button>
+                  <button onClick={handleFacebookSignIn} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 hover:bg-emerald-50">
+                    <img src="https://www.facebook.com/favicon.ico" alt="Facebook" className="w-5 h-5" />
+                    Sign in with Facebook
+                  </button>
+                  <button onClick={handleXSignIn} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 hover:bg-emerald-50">
+                    <span className="text-xl">𝕏</span>
+                    Sign in with X
+                  </button>
+                </div>
+              )
+            ) : (
+              <div className="space-y-3">
+                <button onClick={handleGoogleSignIn} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 hover:bg-emerald-50">
+                  <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                  Sign in with Google
+                </button>
+                <button onClick={handleFacebookSignIn} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 hover:bg-emerald-50">
+                  <img src="https://www.facebook.com/favicon.ico" alt="Facebook" className="w-5 h-5" />
+                  Sign in with Facebook
+                </button>
+                <button onClick={handleXSignIn} className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 hover:bg-emerald-50">
+                  <span className="text-xl">𝕏</span>
+                  Sign in with X
+                </button>
+              </div>
+            )}
+
+            <button onClick={handleMagicLink} className="mt-6 w-full py-3 text-white/80 hover:text-white text-sm">
+              Or use email (magic link)
+            </button>
+
+            <button onClick={handleForcePremium} className="mt-4 w-full py-3 bg-white/20 hover:bg-white/30 text-white rounded-3xl text-sm">
+              🔧 Force Premium (for testing)
+            </button>
+
+            {user && (
+              <button onClick={handleLogout} className="mt-6 w-full py-3 text-white/80 hover:text-white text-sm">Log out</button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
