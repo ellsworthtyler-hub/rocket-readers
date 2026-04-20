@@ -1,11 +1,12 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
+  content: [
+    "./App/**/*.{js,ts,jsx,tsx,mdx}",
+    "./Components/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
   theme: {
-    extend: {
-      colors: { emerald: { 400: "#34d399", 500: "#10b981" } },
-    },
+    extend: {},
   },
   plugins: [],
 };

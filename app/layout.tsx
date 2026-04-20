@@ -1,4 +1,6 @@
-// app/layout.tsx
+//  FILE: app/layout.tsx
+//  =============================
+
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -19,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-slate-50 text-slate-900`}>
         <AuthProvider>
           <NavBar />
           {children}

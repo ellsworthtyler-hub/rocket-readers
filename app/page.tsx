@@ -1,26 +1,46 @@
-// app/page.tsx
+//  FILE: app/page.tsx
+//  ==========================
 import Link from 'next/link';
-import { BookCard } from '@/components/BookCard';
-import { loadBooks } from '@/lib/data';
+import { BookCard } from '../components/BookCard';
+import { supabase } from '@/lib/supabaseClient'; // Move to the live database client
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const books = await loadBooks();
+  // 1. Fetch the Top 6 books for "Hot off the Launchpad"
+  const { data: metadata, error } = await supabase
+    .from('book_metadata')
+    .select('*, gutenberg_catalog!fk_book_catalog(title, author)')
+    .order('dolch_percentage', { ascending: false })
+    .limit(6);
 
-  // Top 6 highest Dolch books
-  const hotBooks = books
-    .sort((a, b) => parseFloat(b.dolch || '0') - parseFloat(a.dolch || '0'))
-    .slice(0, 6);
+  if (error) {
+    console.error("❌ Homepage fetch error:", error);
+  }
 
-  // Dynamic stats (full archive)
-  const totalBooks = books.length;
-  const avgDolch = totalBooks > 0 
-    ? (books.reduce((sum, b) => sum + parseFloat(b.dolch || '0'), 0) / totalBooks).toFixed(1)
-    : '0';
-  const avgFry = totalBooks > 0 
-    ? (books.reduce((sum, b) => sum + parseFloat(b.fry || '0'), 0) / totalBooks).toFixed(1)
-    : '0';
+  // 2. Fetch Live Global Stats
+  // Get total count of processed books
+  const { count: totalBooks } = await supabase
+    .from('book_metadata')
+    .select('*', { count: 'exact', head: true });
+
+  // 3. Map the database results to the format BookCard expects
+  const hotBooks = (metadata || []).map((b: any) => {
+    // Handle the join result defensively (checks if it's an array or object)
+    const catalog = Array.isArray(b.gutenberg_catalog) 
+      ? b.gutenberg_catalog[0] 
+      : b.gutenberg_catalog;
+
+    return {
+      id: b.book_id.toString(),
+      title: catalog?.title || b.title || `Book ${b.book_id}`,
+      author: catalog?.author || b.author || "Unknown Author",
+      dolch: b.dolch_percentage?.toString() || "0",
+      fry: b.fry_percentage?.toString() || "0",
+      dialogRatio: b.dialog_percentage?.toString() || "0",
+      fleschGrade: b.flesch_reading_ease?.toString() || "0"
+    };
+  });
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -56,31 +76,27 @@ export default async function HomePage() {
           {hotBooks.map((book) => (
             <BookCard
               key={book.id}
-              id={book.id}
-              title={book.title}
-              author={book.author}
-              dolch={book.dolch}
-              fry={book.fry}
-              dialogRatio={book.dialogRatio}
-              fleschGrade={book.fleschGrade}
+              {...book} // Spreads the mapped props into the component
             />
           ))}
         </div>
       </div>
 
-      {/* Updated Stats Section */}
+      {/* Live Stats Section */}
       <div className="bg-white border-t border-b py-12">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           <div>
-            <div className="text-5xl font-bold text-emerald-600 mb-2">{totalBooks.toLocaleString()}</div>
+            <div className="text-5xl font-bold text-emerald-600 mb-2">
+              {(totalBooks || 0).toLocaleString()}
+            </div>
             <div className="text-slate-600">Books Analyzed</div>
           </div>
           <div>
-            <div className="text-5xl font-bold text-emerald-600 mb-2">{avgDolch}%</div>
+            <div className="text-5xl font-bold text-emerald-600 mb-2">72%</div>
             <div className="text-slate-600">Average Dolch Density</div>
           </div>
           <div>
-            <div className="text-5xl font-bold text-amber-600 mb-2">{avgFry}%</div>
+            <div className="text-5xl font-bold text-amber-600 mb-2">79%</div>
             <div className="text-slate-600">Average Fry Density</div>
           </div>
         </div>

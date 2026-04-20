@@ -1,60 +1,65 @@
-// lib/data.ts
-import { createClient } from '@supabase/supabase-js';
+//  FILE: lib/data.ts
+//  ===========================
+import { supabase } from './supabaseClient'; 
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-let supabaseInstance: ReturnType<typeof createClient> | null = null;
-export const supabase = supabaseInstance || (supabaseInstance = createClient(supabaseUrl, supabaseAnonKey));
-
-export interface Book {
-  id: string;
-  title: string;
-  author?: string;
-  dolch: string;
-  fry: string;
-  dialogRatio: string;
-  fleschGrade: string;
-}
-
-export async function loadBooks(): Promise<Book[]> {
-  console.log("🔍 Loading FULL library from Supabase archive table...");
+export async function loadBooks() {
+  console.log("📡 Fetching fully processed books from Supabase...");
 
   const { data, error } = await supabase
-    .from("archive")
+    .from('book_metadata')
     .select(`
-      id,
-      title,
-      author,
-      dolch_density,
-      fry_density,
-      dialog_ratio,
-      flesch_grade
+      book_id,
+      total_words,
+      unique_words,
+      flesch_reading_ease,
+      dialog_percentage,
+      dolch_percentage,  
+      fry_percentage,    
+      gutenberg_catalog (
+        title,
+        author,
+        subjects
+      )
     `)
-    .not("dolch_density", "is", null)
-    .order("dolch_density", { ascending: false })
-    .limit(70000);   // ← THIS IS THE FIX — forces full 61k+
+    .order('book_id', { ascending: true })
+    .limit(100); 
 
   if (error) {
-    console.error("Supabase error:", error);
+    console.error("❌ Supabase error:", error);
     return [];
   }
 
-  const books = (data || []).map((row: any) => ({
-    id: row.id?.toString() || "",
-    title: row.title || "Untitled",
-    author: row.author || "Unknown",
-    dolch: parseFloat(row.dolch_density || "0").toFixed(1),
-    fry: parseFloat(row.fry_density || "0").toFixed(1),
-    dialogRatio: parseFloat(row.dialog_ratio || "0").toFixed(1),
-    fleschGrade: parseFloat(row.flesch_grade || "0").toFixed(1),
-  }));
+  console.log(`✅ Successfully loaded ${data.length} processed books!`);
 
-  console.log(`✅ LOADED FULL ARCHIVE: ${books.length.toLocaleString()} books with REAL metrics`);
-  return books;
+  return data.map((book: any) => ({
+    id: book.book_id.toString(), 
+    title: book.gutenberg_catalog?.title || "Unknown Title",
+    author: book.gutenberg_catalog?.author || "Unknown Author",
+    
+    dialogRatio: book.dialog_percentage?.toString() || "0",
+    fleschGrade: book.flesch_reading_ease?.toString() || "0",
+    
+    // Grabbing the newly calculated metrics!
+    dolch: book.dolch_percentage?.toString() || "0",
+    fry: book.fry_percentage?.toString() || "0"
+  }));
 }
 
-export async function getBookById(id: string): Promise<Book | null> {
-  const books = await loadBooks();
-  return books.find(book => book.id === id) || null;
+export async function getGlobalStats() {
+  const { data, count, error } = await supabase
+    .from('book_metadata')
+    .select('dolch_percentage, fry_percentage', { count: 'exact' });
+
+  if (error || !data || data.length === 0) {
+    return { totalBooks: 0, avgDolch: 0, avgFry: 0 };
+  }
+
+  const totalDolch = data.reduce((sum, book) => sum + (book.dolch_percentage || 0), 0);
+  const totalFry = data.reduce((sum, book) => sum + (book.fry_percentage || 0), 0);
+
+  return {
+    totalBooks: count || data.length,
+    avgDolch: (totalDolch / data.length).toFixed(1),
+    avgFry: (totalFry / data.length).toFixed(1)
+  };
 }
