@@ -1,0 +1,30 @@
+name: Rocket Readers Gutenberg Updater
+
+on:
+  schedule:
+    - cron: '0 9 * * *'     # 9:00 AM UTC daily
+    - cron: '0 21 * * *'    # 9:00 PM UTC daily
+  workflow_dispatch:        # Allows manual trigger from GitHub UI
+
+jobs:
+  update-gutenberg:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r Python_Script_Requirements.txt
+
+      - name: Run Gutenberg Updater
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python rr_gutenberg_updater.py
