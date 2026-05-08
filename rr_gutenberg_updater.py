@@ -1,9 +1,30 @@
-# FILE: rr_gutenberg_updater.py — Updated for rr_ schema
+# FILE: rr_gutenberg_updater.py — FULLY SELF-CONTAINED (no rr_config needed)
+# Combined config + updater for GitHub Actions
+
+import os
 import re
 import time
 import requests
+import logging
 from xml.etree import ElementTree as ET
-from rr_config import supabase, log_step, logger
+from supabase import create_client, Client
+
+# ====================== CONFIG (embedded) ======================
+url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+if not url or not key:
+    raise ValueError("Missing Supabase environment variables!")
+
+supabase: Client = create_client(url, key)
+
+# Simple logger
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logger = logging.getLogger("RocketReaders")
+
+def log_step(msg):
+    logger.info(f"🚀 {msg}")
+# ============================================================
 
 def normalize_author(author_str: str) -> str:
     if not author_str or author_str.strip() in ["", "Unknown"]:
@@ -49,11 +70,13 @@ def parse_rss() -> dict:
         for item in root.findall(".//item"):
             title_elem = item.find("title")
             link_elem = item.find("link")
-            if title_elem is None or link_elem is None: continue
+            if title_elem is None or link_elem is None:
+                continue
             full_title = title_elem.text or ""
             link = link_elem.text or ""
             book_id_match = re.search(r'/ebooks/(\d+)', link)
-            if not book_id_match: continue
+            if not book_id_match:
+                continue
             book_id = int(book_id_match.group(1))
             if " by " in full_title:
                 title, author = full_title.rsplit(" by ", 1)
@@ -71,7 +94,6 @@ def parse_rss() -> dict:
 def update_gutenberg():
     log_step("GUTENBERG DAILY UPDATE STARTED (rr_ schema)")
     
-    # Get existing books in new schema
     existing = supabase.table("rr_book") \
         .select("source_id") \
         .eq("source", "gutenberg") \
