@@ -1,4 +1,4 @@
-# FILE: rr_gutenberg_updater.py — Self-contained & ROBUST (with retry for internal ID)
+# FILE: rr_gutenberg_updater.py — Self-contained & ULTRA-ROBUST + Discord Notification
 import os
 import re
 import time
@@ -11,6 +11,8 @@ from supabase import create_client, Client
 url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(url, key)
+
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger("RocketReaders")
@@ -83,8 +85,7 @@ def parse_rss() -> dict:
     return books
 
 def get_internal_book_id(gutenberg_id: int) -> int:
-    """Retry up to 5 times to get the internal id (handles Supabase visibility delay)"""
-    for attempt in range(5):
+    for attempt in range(10):
         try:
             res = supabase.table("rr_book") \
                 .select("id") \
@@ -95,8 +96,24 @@ def get_internal_book_id(gutenberg_id: int) -> int:
                 return res.data["id"]
         except Exception:
             pass
-        time.sleep(0.4)  # small back-off
-    raise Exception(f"Could not find internal id for Book #{gutenberg_id} after 5 attempts")
+        time.sleep(0.5 + attempt * 0.2)
+    raise Exception(f"Could not find internal id for Book #{gutenberg_id} after 10 attempts")
+
+def send_discord_notification(added_books: list):
+    if not DISCORD_WEBHOOK_URL or not added_books:
+        return
+    count = len(added_books)
+    lines = [f"**🚀 Rocket Readers Updater** — {count} new book{'s' if count != 1 else ''} added today!\n"]
+    for g_id, title, author in added_books:
+        lines.append(f"• **#{g_id}** — {title} by {author}")
+    message = "\n".join(lines)
+
+    payload = {"content": message}
+    try:
+        requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
+        logger.info(f"📧 Discord notification sent ({count} books)")
+    except Exception as e:
+        logger.warning(f"Failed to send Discord notification: {e}")
 
 def update_gutenberg():
     log_step("GUTENBERG DAILY UPDATE STARTED (rr_ schema)")
@@ -119,9 +136,10 @@ def update_gutenberg():
     missing = {bid: data for bid, data in new_books.items() if bid not in existing_ids}
     logger.info(f"🎯 Found {len(missing):,} new books to add")
 
+    added_books = []  # for notification
+
     for gutenberg_id, meta in missing.items():
         try:
-            # 1. Upsert the book
             book_payload = {
                 "source": "gutenberg",
                 "source_id": str(gutenberg_id),
@@ -130,19 +148,22 @@ def update_gutenberg():
                 "language": meta["language"]
             }
             supabase.table("rr_book").upsert(book_payload).execute()
+            time.sleep(0.8)
 
-            # 2. Get internal id with retry
             internal_id = get_internal_book_id(gutenberg_id)
 
-            # 3. Add to queue
             supabase.table("rr_processing_queue").upsert({
                 "book_id": internal_id,
                 "status": "pending"
             }).execute()
 
+            added_books.append((gutenberg_id, meta["title"], meta["author"]))
             logger.info(f"✅ Added Book #{gutenberg_id} (internal #{internal_id}) — {meta['title'][:60]}...")
         except Exception as e:
             logger.warning(f"⚠️ Failed to add Book #{gutenberg_id}: {e}")
+
+    # Send summary notification
+    send_discord_notification(added_books)
 
     log_step("GUTENBERG UPDATE COMPLETE")
     return True
