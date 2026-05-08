@@ -1,24 +1,16 @@
-# FILE: rr_gutenberg_updater.py — FULLY SELF-CONTAINED (no rr_config needed)
-# Combined config + updater for GitHub Actions
-
+# FILE: rr_gutenberg_updater.py — Self-contained & Fixed for rr_ schema (GitHub Actions ready)
 import os
 import re
-import time
 import requests
 import logging
 from xml.etree import ElementTree as ET
 from supabase import create_client, Client
 
-# ====================== CONFIG (embedded) ======================
+# ====================== DIRECT CONFIG ======================
 url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-if not url or not key:
-    raise ValueError("Missing Supabase environment variables!")
-
 supabase: Client = create_client(url, key)
 
-# Simple logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger("RocketReaders")
 
@@ -70,13 +62,11 @@ def parse_rss() -> dict:
         for item in root.findall(".//item"):
             title_elem = item.find("title")
             link_elem = item.find("link")
-            if title_elem is None or link_elem is None:
-                continue
+            if title_elem is None or link_elem is None: continue
             full_title = title_elem.text or ""
             link = link_elem.text or ""
             book_id_match = re.search(r'/ebooks/(\d+)', link)
-            if not book_id_match:
-                continue
+            if not book_id_match: continue
             book_id = int(book_id_match.group(1))
             if " by " in full_title:
                 title, author = full_title.rsplit(" by ", 1)
@@ -93,13 +83,14 @@ def parse_rss() -> dict:
 
 def update_gutenberg():
     log_step("GUTENBERG DAILY UPDATE STARTED (rr_ schema)")
-    
+
+    # Get existing Gutenberg books
     existing = supabase.table("rr_book") \
         .select("source_id") \
         .eq("source", "gutenberg") \
         .execute().data
     existing_ids = {int(row["source_id"]) for row in existing}
-    
+
     logger.info(f"📊 rr_book already has {len(existing_ids):,} books")
 
     new_books = {}
@@ -112,24 +103,36 @@ def update_gutenberg():
     missing = {bid: data for bid, data in new_books.items() if bid not in existing_ids}
     logger.info(f"🎯 Found {len(missing):,} new books to add")
 
-    for book_id, meta in missing.items():
+    for gutenberg_id, meta in missing.items():
         try:
-            supabase.table("rr_book").insert({
+            # 1. Upsert book into rr_book
+            book_payload = {
                 "source": "gutenberg",
-                "source_id": str(book_id),
+                "source_id": str(gutenberg_id),
                 "title": meta["title"],
                 "author": meta["author"],
                 "language": meta["language"]
-            }).execute()
-            
-            supabase.table("rr_processing_queue").insert({
-                "book_id": book_id,
+            }
+            supabase.table("rr_book").upsert(book_payload).execute()
+
+            # 2. Get the internal id (this is what the queue needs)
+            internal_res = supabase.table("rr_book") \
+                .select("id") \
+                .eq("source", "gutenberg") \
+                .eq("source_id", str(gutenberg_id)) \
+                .single().execute()
+
+            internal_id = internal_res.data["id"]
+
+            # 3. Add to processing queue using correct internal id
+            supabase.table("rr_processing_queue").upsert({
+                "book_id": internal_id,
                 "status": "pending"
             }).execute()
-            
-            logger.info(f"✅ Added Book #{book_id} — {meta['title'][:60]}...")
+
+            logger.info(f"✅ Added/Updated Book #{gutenberg_id} — {meta['title'][:60]}...")
         except Exception as e:
-            logger.warning(f"⚠️ Failed to add Book #{book_id}: {e}")
+            logger.warning(f"⚠️ Failed to add Book #{gutenberg_id}: {e}")
 
     log_step("GUTENBERG UPDATE COMPLETE")
     return True
