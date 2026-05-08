@@ -1,6 +1,7 @@
-# FILE: rr_gutenberg_updater.py — Self-contained & Fixed for rr_ schema (GitHub Actions ready)
+# FILE: rr_gutenberg_updater.py — Self-contained & ROBUST (with retry for internal ID)
 import os
 import re
+import time
 import requests
 import logging
 from xml.etree import ElementTree as ET
@@ -81,10 +82,25 @@ def parse_rss() -> dict:
         logger.error(f"RSS parse error: {e}")
     return books
 
+def get_internal_book_id(gutenberg_id: int) -> int:
+    """Retry up to 5 times to get the internal id (handles Supabase visibility delay)"""
+    for attempt in range(5):
+        try:
+            res = supabase.table("rr_book") \
+                .select("id") \
+                .eq("source", "gutenberg") \
+                .eq("source_id", str(gutenberg_id)) \
+                .single().execute()
+            if res.data and res.data.get("id"):
+                return res.data["id"]
+        except Exception:
+            pass
+        time.sleep(0.4)  # small back-off
+    raise Exception(f"Could not find internal id for Book #{gutenberg_id} after 5 attempts")
+
 def update_gutenberg():
     log_step("GUTENBERG DAILY UPDATE STARTED (rr_ schema)")
 
-    # Get existing Gutenberg books
     existing = supabase.table("rr_book") \
         .select("source_id") \
         .eq("source", "gutenberg") \
@@ -105,7 +121,7 @@ def update_gutenberg():
 
     for gutenberg_id, meta in missing.items():
         try:
-            # 1. Upsert book into rr_book
+            # 1. Upsert the book
             book_payload = {
                 "source": "gutenberg",
                 "source_id": str(gutenberg_id),
@@ -115,22 +131,16 @@ def update_gutenberg():
             }
             supabase.table("rr_book").upsert(book_payload).execute()
 
-            # 2. Get the internal id (this is what the queue needs)
-            internal_res = supabase.table("rr_book") \
-                .select("id") \
-                .eq("source", "gutenberg") \
-                .eq("source_id", str(gutenberg_id)) \
-                .single().execute()
+            # 2. Get internal id with retry
+            internal_id = get_internal_book_id(gutenberg_id)
 
-            internal_id = internal_res.data["id"]
-
-            # 3. Add to processing queue using correct internal id
+            # 3. Add to queue
             supabase.table("rr_processing_queue").upsert({
                 "book_id": internal_id,
                 "status": "pending"
             }).execute()
 
-            logger.info(f"✅ Added/Updated Book #{gutenberg_id} — {meta['title'][:60]}...")
+            logger.info(f"✅ Added Book #{gutenberg_id} (internal #{internal_id}) — {meta['title'][:60]}...")
         except Exception as e:
             logger.warning(f"⚠️ Failed to add Book #{gutenberg_id}: {e}")
 
