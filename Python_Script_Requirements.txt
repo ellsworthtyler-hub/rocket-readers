@@ -1,0 +1,8 @@
+supabase
+spacy
+textstat
+fpdf2
+nltk
+pandas
+boto3
+python-dotenv
