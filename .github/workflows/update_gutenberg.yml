@@ -24,13 +24,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r Python_Script_Requirements.txt
 
-      - name: Run Gutenberg Updater
+      - name: Run Gutenberg Updater & Send Alert
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK }} # Secret passed directly here!
         run: python -u rr_gutenberg_updater.py
-
-      - name: Send Discord Notification
-        run: python send_alert.py
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} # This line is critical!
