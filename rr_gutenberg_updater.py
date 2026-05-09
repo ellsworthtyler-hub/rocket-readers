@@ -162,8 +162,36 @@ def update_gutenberg():
         except Exception as e:
             logger.warning(f"⚠️ Failed to add Book #{gutenberg_id}: {e}")
 
-    # Send summary notification
-    send_discord_notification(added_books)
+    # ==========================================
+    # DISCORD NOTIFICATION ENGINE
+    # ==========================================
+    if DISCORD_WEBHOOK_URL:
+        logger.info("Sending notification to Discord...")
+        
+        if added_books:
+            # Build a summary of the added books
+            msg = f"🚀 **Rocket Readers Update**: Added **{len(added_books)}** new books to the queue!\n"
+            
+            # List up to 10 books so we don't break Discord's character limit
+            for b in added_books[:10]:
+                title = b[1][:40] + "..." if len(b[1]) > 40 else b[1]
+                msg += f"- *{title}* by {b[2]}\n"
+                
+            if len(added_books) > 10:
+                msg += f"...and {len(added_books) - 10} more."
+        else:
+            msg = "✅ **Rocket Readers Update**: Routine check complete. No new books found on Gutenberg today."
+
+        # Fire the webhook
+        try:
+            response = requests.post(DISCORD_WEBHOOK_URL, json={"content": msg})
+            response.raise_for_status()
+            logger.info("Discord notification sent successfully!")
+        except Exception as e:
+            logger.error(f"Failed to send Discord message: {e}")
+            
+    else:
+        logger.warning("DISCORD_WEBHOOK_URL not found in environment. Skipping notification.")
 
     log_step("GUTENBERG UPDATE COMPLETE")
     return True
