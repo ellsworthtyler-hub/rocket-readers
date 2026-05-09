@@ -162,36 +162,44 @@ def update_gutenberg():
         except Exception as e:
             logger.warning(f"⚠️ Failed to add Book #{gutenberg_id}: {e}")
 
+   # ==========================================
+    # DISCORD NOTIFICATION ENGINE (X-RAY MODE)
     # ==========================================
-    # DISCORD NOTIFICATION ENGINE
-    # ==========================================
-    if DISCORD_WEBHOOK_URL:
-        logger.info("Sending notification to Discord...")
+    # Check both variable names just in case!
+    hook_url = os.getenv("DISCORD_WEBHOOK_URL") or os.getenv("DISCORD_WEBHOOK")
+    
+    print("\n--- DISCORD DEBUG DIAGNOSTICS ---")
+    if hook_url:
+        # Print the first 35 chars to prove Python can actually see the URL
+        print(f"✅ SECRET FOUND: {hook_url[:35]}...") 
+    else:
+        print("❌ SECRET MISSING: Python sees 'None'. GitHub is not passing the secret.")
+    print("---------------------------------\n")
+
+    if hook_url:
+        logger.info("Attempting to send notification to Discord...")
         
         if added_books:
-            # Build a summary of the added books
             msg = f"🚀 **Rocket Readers Update**: Added **{len(added_books)}** new books to the queue!\n"
-            
-            # List up to 10 books so we don't break Discord's character limit
             for b in added_books[:10]:
                 title = b[1][:40] + "..." if len(b[1]) > 40 else b[1]
                 msg += f"- *{title}* by {b[2]}\n"
-                
-            if len(added_books) > 10:
-                msg += f"...and {len(added_books) - 10} more."
         else:
             msg = "✅ **Rocket Readers Update**: Routine check complete. No new books found on Gutenberg today."
 
         # Fire the webhook
         try:
-            response = requests.post(DISCORD_WEBHOOK_URL, json={"content": msg})
+            response = requests.post(hook_url, json={"content": msg})
+            # This will force Python to print the EXACT reason Discord rejected it (e.g., 401 Unauthorized, 400 Bad Request)
+            if not response.ok:
+                print(f"❌ DISCORD REJECTED PAYLOAD: {response.status_code} - {response.text}")
             response.raise_for_status()
-            logger.info("Discord notification sent successfully!")
+            logger.info("✅ Discord notification sent successfully!")
         except Exception as e:
-            logger.error(f"Failed to send Discord message: {e}")
+            logger.error(f"❌ Failed to send Discord message: {e}")
             
     else:
-        logger.warning("DISCORD_WEBHOOK_URL not found in environment. Skipping notification.")
+        logger.warning("DISCORD_WEBHOOK_URL not found. Skipping notification.")
 
     log_step("GUTENBERG UPDATE COMPLETE")
     return True
