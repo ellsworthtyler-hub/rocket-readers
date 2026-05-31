@@ -1,4 +1,4 @@
-//  FILE: app/book/[id]/page.tsx
+//  FILE:  app/book/[id]/page.tsx
 //  =============================
 
 import { supabase } from '@/lib/supabaseClient';
@@ -6,23 +6,27 @@ import BookActions from '@/components/ui/BookActions';
 import BookFeedback from '@/components/ui/BookFeedback';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { BadgeLegend } from "@/components/BadgeLegend";
+
 
 // Helper to find exact database percentiles
 function calcPercentiles(data: any[], key: string) {
-  if (!data || data.length === 0) return { p50: 0, p70: 0, p90: 0 };
+  if (!data || data.length === 0) return { p50: 0, p70: 0, p90: 0, p95: 0 };
   const vals = data.map(d => parseFloat(d[key] || 0)).filter(n => !isNaN(n)).sort((a, b) => a - b);
   const len = vals.length;
   return {
-    p50: vals[Math.floor(len * 0.50)], 
-    p70: vals[Math.floor(len * 0.70)], 
-    p90: vals[Math.floor(len * 0.90)], 
+    p50: vals[Math.floor(len * 0.50)] || 0, 
+    p70: vals[Math.floor(len * 0.70)] || 0, 
+    p90: vals[Math.floor(len * 0.90)] || 0, 
+    p95: vals[Math.floor(len * 0.95)] || 0,   // ← NEW: supports 💎 Elite (Top 5%)
   };
 }
 
-function getDynamicEmoticon(value: number, thresholds: { p50: number, p70: number, p90: number }) {
-  if (value >= thresholds.p90) return '🚀';
-  if (value >= thresholds.p70) return '🔥';
-  if (value >= thresholds.p50) return '✅';
+function getDynamicEmoticon(value: number, thresholds: { p50: number, p70: number, p90: number, p95: number }) {
+  if (value >= thresholds.p95) return '💎';  // Elite (Top 5%)
+  if (value >= thresholds.p90) return '🚀';  // Incredible (Top 10%)
+  if (value >= thresholds.p70) return '🔥';  // Great (Top 25%)
+  if (value >= thresholds.p50) return '✅';  // Above Avg (Top 50%)
   return ''; 
 }
 
@@ -32,32 +36,83 @@ export default async function BookPage({
   params: Promise<{ id: string }>
 }) {
   const resolvedParams = await params;
-  const bookId = parseInt(resolvedParams.id, 10);
-  
-  // 1. Fetch Target Book Metadata
-  const { data: metaData, error: metaError } = await supabase
-    .from('book_metadata')
-    .select('*, gutenberg_catalog(*)')
-    .eq('book_id', bookId) 
+  // The URL always contains the public Gutenberg source_id (what you see in BookCards)
+  const sourceId = resolvedParams.id;
+
+  // 1. Resolve public source_id → internal rr_book.id
+  const { data: rrBook, error: rrBookError } = await supabase
+    .from('rr_book')
+    .select('id, source_id, title, author')
+    .eq('source_id', sourceId)
+    .eq('source', 'gutenberg')
     .single();
 
-  // TEMPORARY DEBUG BLOCK:
+  if (rrBookError || !rrBook) {
+    // Book doesn't even exist in our new rr_book table
+    notFound();
+  }
+
+  const internalBookId = rrBook.id;
+
+  // 2. Fetch the processed stats from rr_book_metadata
+  const { data: metaData, error: metaError } = await supabase
+    .from('rr_book_metadata')
+    .select('*')
+    .eq('book_id', internalBookId)
+    .single();
+
+  // Friendly state when the book is known but not yet processed
   if (metaError || !metaData) {
     return (
-      <div className="p-12 text-left bg-white min-h-screen">
-        <h1 className="text-3xl font-bold text-red-600 mb-4">🚨 Supabase Blocked the Request</h1>
-        <p className="mb-4 text-slate-600">We searched for Book ID: <strong>{bookId}</strong></p>
-        <div className="bg-slate-900 text-green-400 p-6 rounded-xl overflow-x-auto">
-          <pre>Error Details: {JSON.stringify(metaError, null, 2)}</pre>
+      <main className="min-h-screen bg-slate-50 pb-20">
+        <div className="bg-white border-b px-6 py-4">
+          <div className="max-w-5xl mx-auto">
+            <Link href="/search" className="text-emerald-600 font-bold hover:text-emerald-700 transition">
+              ← Back to Library
+            </Link>
+          </div>
         </div>
-      </div>
+
+        <div className="max-w-3xl mx-auto px-6 py-16 text-center">
+          <div className="text-6xl mb-6">⏳</div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-4">
+            {rrBook.title || `Book ${sourceId}`}
+          </h1>
+          <p className="text-lg text-slate-600 mb-8">
+            {rrBook.author || "Unknown Author"}
+          </p>
+
+          <div className="bg-white rounded-3xl border border-slate-200 p-10">
+            <h2 className="text-2xl font-semibold text-slate-800 mb-3">
+              Enhanced stats are being prepared
+            </h2>
+            <p className="text-slate-600 max-w-md mx-auto">
+              This book is in our processing queue. The full Rocket Reader analytics 
+              (Dolch, Fry, dialogue %, word length distribution, etc.) will appear here 
+              once the current run completes for this title.
+            </p>
+
+            <div className="mt-8">
+              <a 
+                href={`https://www.gutenberg.org/ebooks/${sourceId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-6 py-3 bg-white border border-slate-300 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Read the free original on Gutenberg →
+              </a>
+            </div>
+          </div>
+        </div>
+      </main>
     );
   }
 
-  // 2. Fetch Global Stats for Percentiles
+  // 3. Fetch Global Stats for Percentiles (from the new processed table only)
   const { data: allBooks } = await supabase
-    .from('book_metadata')
-    .select('dolch_percentage, fry_percentage, dialog_percentage, flesch_reading_ease');
+    .from('rr_book_metadata')
+    .select('dolch_percentage, fry_percentage, dialog_percentage, flesch_reading_ease')
+    .not('last_processed', 'is', null);
 
   const thresholds = {
     dolch: calcPercentiles(allBooks || [], 'dolch_percentage'),
@@ -106,11 +161,15 @@ export default async function BookPage({
       <div className="max-w-5xl mx-auto px-6 py-8">
         
         <h1 className="text-4xl font-bold text-slate-900 mb-2">
-          {metaData.gutenberg_catalog?.title || "Unknown Title"}
+          {rrBook.title || "Unknown Title"}
         </h1>
         <p className="text-lg text-slate-500 mb-8">
-          {metaData.gutenberg_catalog?.author || "Unknown Author"}
+          {rrBook.author || "Unknown Author"}
         </p>
+
+        {/* --- BADGELEGEND COMPONENT --- */}
+        <BadgeLegend />
+        {/* ----------------------------- */}
 
         {/* TOP 4 HERO STATS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -149,8 +208,8 @@ export default async function BookPage({
 		
 		{/* THE NEW ACTION BAR */}
         <BookActions 
-          bookId={bookId} 
-          gutenbergId={metaData.gutenberg_catalog?.id || bookId} 
+          bookId={sourceId} 
+          gutenbergId={sourceId} 
         />
 		
         {/* DEEP ANALYTICS DASHBOARD */}
@@ -234,7 +293,7 @@ export default async function BookPage({
         </div>
 
         {/* THE COMMUNITY MODERATION SYSTEM */}
-        <BookFeedback bookId={bookId} />
+        <BookFeedback bookId={sourceId} />
 
       </div>
     </main>
