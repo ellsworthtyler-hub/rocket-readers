@@ -49,13 +49,7 @@ export default function BookFeedback({ bookId }: { bookId: string | number }) {
         onClick={() => submitFeedback('flag_content')}
         className="hover:text-rose-500 transition flex items-center gap-2"
       >
-        <span className="text-lg">⚠️</span> Flag Content
-      </button>
-      <button 
-        onClick={() => submitFeedback('flag_error')}
-        className="hover:text-red-600 transition flex items-center gap-2"
-      >
-        <span className="text-lg">🚩</span> Report Error
+        <span className="text-lg">🚩</span> Flag Content
       </button>
     </div>
   );

@@ -1,5 +1,9 @@
 //  FILE:  components/ui/BookActions.tsx
 //  =======================================
+//  NOTE ON IDs (Pro Architecture):
+//  - bookId prop: the public Gutenberg source_id (what appears in URLs like /book/12345 and /read/12345)
+//  - gutenbergId: the same value, passed explicitly for the external Gutenberg.org link
+//  The internal surrogate (rr_book.id) is resolved server-side only when we need to query rr_book_metadata.
 
 'use client';
 
@@ -7,7 +11,9 @@ import { useAuth } from '@/components/AuthProvider';
 import Link from 'next/link';
 
 interface BookActionsProps {
-  bookId: number;
+  /** Public Gutenberg source_id used for all user-facing routes (/book/{id}, /read/{id}, etc.) */
+  bookId: string | number;
+  /** Same public ID, used for the "Get the FREE ebook" link to gutenberg.org */
   gutenbergId: string | number;
 }
 

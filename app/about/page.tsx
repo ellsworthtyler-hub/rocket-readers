@@ -15,7 +15,7 @@ export default function AboutPage() {
         
         <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200 space-y-6 text-lg text-slate-700 leading-relaxed">
         
-     	  <p>
+      	  <p>
             {/* PASTE YOUR FIRST PARAGRAPH HERE */}
             Reading is not a naturally wired brain function; it is a complex skill that must be explicitly taught. According to modern research grounded in the "Science of Reading," successful literacy hinges on a cognitive process known as orthographic mapping. This is the mental mechanism where a reader connects the sounds of a spoken word (phonemes) to its written letter sequence (orthography), permanently storing it in their long-term memory.
           </p>
@@ -28,7 +28,7 @@ export default function AboutPage() {
 		  Decoding the Frameworks: Dolch vs. Fry Sight Words
         </h1>
  
-     	  <p>
+      	  <p>
             {/* PASTE YOUR FIRST PARAGRAPH HERE */}
             To help students build this foundational vocabulary, educators rely on two gold-standard lists of high-frequency words: the Dolch and Fry sight word lists.
           </p>
@@ -45,7 +45,7 @@ export default function AboutPage() {
 		  Decoding the Frameworks: Dolch vs. Fry Sight Words
         </h1>
 
-     	  <p>
+      	  <p>
             {/* PASTE YOUR FIRST PARAGRAPH HERE */}
             At Rocket Readers, we take the proven science of orthographic mapping and bring it to life through technology. Our mission is to accelerate literacy for 6-16 year-olds and ESL learners by moving beyond static text. Our premium membership unlocks "enhanced ebooks" that visually color-code exact Dolch and Fry sight words right on the screen. Furthermore, our interactive platform allows students to toggle specific parts of speech, dynamically changing the font color and weight of nouns, verbs, or adjectives to provide immediate structural feedback to the reader.
           </p>
