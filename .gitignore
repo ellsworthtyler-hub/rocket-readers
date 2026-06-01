@@ -4,4 +4,4 @@ node_modules
 *.log
 temp/
 *.pem
-.DS_Store
+.DS_Store"next-env.d.ts" 
