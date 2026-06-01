@@ -6,7 +6,7 @@ import BookActions from '@/components/ui/BookActions';
 import BookFeedback from '@/components/ui/BookFeedback';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { BadgeLegend } from "./components/BadgeLegend";
+import { BadgeLegend } from "@/components/BadgeLegend";
 
 
 // Helper to find exact database percentiles
