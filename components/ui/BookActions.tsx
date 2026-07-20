@@ -76,7 +76,7 @@ export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
           href={`https://www.gutenberg.org/ebooks/${gutenbergId}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 py-4 px-4 border-2 border-slate-200 text-slate-600 font-bold rounded-2xl text-center hover:bg-slate-100 hover:border-slate-300 transition"
+          className="flex-1 py-4 px-4 border-2 border-slate-500 text-slate-200 font-bold rounded-2xl text-center bg-slate-800/80 hover:bg-slate-700 hover:border-slate-400 transition"
         >
           Get the FREE ebook here!
         </a>
@@ -84,7 +84,7 @@ export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
         {/* 2. Always free: sample enhanced */}
         <Link
           href={`/read/${id}?sample=true`}
-          className="flex-1 py-4 px-4 bg-white text-emerald-700 font-bold rounded-2xl text-center border-2 border-emerald-200 hover:bg-emerald-50 transition"
+          className="flex-1 py-4 px-4 bg-emerald-900/50 text-emerald-200 font-bold rounded-2xl text-center border-2 border-emerald-500/60 hover:bg-emerald-800/60 transition"
         >
           Read Free Sample
         </Link>
@@ -93,20 +93,20 @@ export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
       <div className="flex flex-col md:flex-row gap-4">
         {/* 3. Premium: full enhanced */}
         {loading ? (
-          <div className="flex-[2] py-4 px-4 bg-slate-100 text-slate-400 font-bold rounded-2xl text-center animate-pulse">
+          <div className="flex-[2] py-4 px-4 bg-slate-800 text-slate-500 font-bold rounded-2xl text-center animate-pulse">
             Loading…
           </div>
         ) : isPremium ? (
           <Link
             href={`/read/${id}`}
-            className="flex-[2] py-4 px-4 bg-emerald-600 text-white font-bold rounded-2xl text-center hover:bg-emerald-700 transition shadow-sm"
+            className="flex-[2] py-4 px-4 bg-emerald-600 text-white font-bold rounded-2xl text-center hover:bg-emerald-500 transition shadow-sm"
           >
             Read Full Enhanced Ebook
           </Link>
         ) : (
           <Link
             href="/premium"
-            className="flex-[2] py-4 px-4 bg-white text-slate-400 font-bold rounded-2xl text-center border-2 border-slate-100 flex items-center justify-center gap-2 hover:bg-slate-50 transition"
+            className="flex-[2] py-4 px-4 bg-slate-800/90 text-slate-300 font-bold rounded-2xl text-center border-2 border-slate-600 flex items-center justify-center gap-2 hover:border-emerald-500/50 transition"
           >
             <span>🔒</span> Unlock Full Enhanced Ebook
           </Link>
@@ -114,7 +114,7 @@ export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
 
         {/* 4. Premium: classwork packets */}
         {loading ? (
-          <div className="flex-1 py-4 px-4 bg-slate-100 text-slate-400 font-bold rounded-2xl text-center animate-pulse">
+          <div className="flex-1 py-4 px-4 bg-slate-800 text-slate-500 font-bold rounded-2xl text-center animate-pulse">
             …
           </div>
         ) : isPremium ? (
@@ -122,14 +122,14 @@ export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
             type="button"
             onClick={handlePacketDownload}
             disabled={packetBusy}
-            className="flex-1 py-4 px-4 bg-emerald-100 text-emerald-800 font-bold rounded-2xl text-center hover:bg-emerald-200 transition disabled:opacity-60"
+            className="flex-1 py-4 px-4 bg-emerald-800/60 text-emerald-100 font-bold rounded-2xl text-center border border-emerald-500/40 hover:bg-emerald-700/60 transition disabled:opacity-60"
           >
             {packetBusy ? 'Preparing…' : 'Download Classwork Packet'}
           </button>
         ) : (
           <Link
             href="/premium"
-            className="flex-1 py-4 px-4 bg-white text-slate-400 font-bold rounded-2xl text-center border-2 border-slate-100 flex items-center justify-center gap-2 hover:bg-slate-50 transition"
+            className="flex-1 py-4 px-4 bg-slate-800/90 text-slate-400 font-bold rounded-2xl text-center border-2 border-slate-600 flex items-center justify-center gap-2 hover:border-slate-500 transition"
           >
             <span>🔒</span> Classwork Packets
           </Link>
@@ -137,7 +137,7 @@ export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
       </div>
 
       {!loading && !isPremium && (
-        <p className="text-xs text-center text-slate-500">
+        <p className="text-xs text-center text-slate-400">
           Free: Gutenberg original + sample enhanced edition. Premium: full interactive ebook + 10-week classwork packet.
         </p>
       )}

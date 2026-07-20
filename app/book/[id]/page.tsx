@@ -1,5 +1,6 @@
 //  FILE:  app/book/[id]/page.tsx
 //  URL id = public Gutenberg source_id; stats from rr_book_metadata
+//  Cosmic-theme book dashboard
 
 import BookActions from '@/components/ui/BookActions';
 import BookFeedback from '@/components/ui/BookFeedback';
@@ -41,7 +42,6 @@ function gradeEmoticon(value: number, samples: number[]) {
   if (!samples.length || !value) return '';
   const sorted = [...samples].sort((a, b) => a - b);
   const pctRank = sorted.filter((v) => v <= value).length / sorted.length;
-  // Lower grade = better → lower pctRank is better
   if (pctRank <= 0.05) return '💎';
   if (pctRank <= 0.1) return '🚀';
   if (pctRank <= 0.3) return '🔥';
@@ -52,6 +52,13 @@ function gradeEmoticon(value: number, samples: number[]) {
 function breadthPct(val: number | null | undefined) {
   return Math.min(100, Math.max(0, Math.round(Number(val) || 0)));
 }
+
+/** Panel for secondary analytics on cosmic background */
+const panel =
+  'rounded-3xl p-6 border border-slate-600/80 bg-slate-800/90 shadow-lg shadow-black/20';
+const panelTitle = 'text-lg font-bold text-slate-50 mb-4';
+const rowLabel = 'text-slate-400';
+const rowValue = 'font-semibold text-slate-100';
 
 export default async function BookPage({
   params,
@@ -70,7 +77,6 @@ export default async function BookPage({
     notFound();
   }
 
-  // Require at least some processing for full dashboard; still show shell if book exists
   const allBooks = await getAllMetricSamples();
   const thresholds = {
     dolch: calcPercentiles(allBooks, 'dolch_percentage'),
@@ -124,28 +130,33 @@ export default async function BookPage({
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-20">
-      <div className="bg-white border-b px-6 py-4">
+    <div className="pb-20">
+      <div className="border-b border-slate-700/80 bg-slate-950/70 backdrop-blur px-6 py-4">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <Link href="/search" className="text-emerald-600 font-bold hover:text-emerald-700 transition">
+          <Link
+            href="/search"
+            className="text-emerald-300 font-bold hover:text-emerald-200 transition"
+          >
             ← Back to Library
           </Link>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">{meta.title}</h1>
-        <p className="text-lg text-slate-500 mb-8">{meta.author}</p>
+        <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
+          {meta.title}
+        </h1>
+        <p className="text-lg text-slate-300 mb-8 font-semibold">{meta.author}</p>
 
         <BadgeLegend />
 
-        {/* Hero stats */}
+        {/* Hero stats — keep bright pastel tiles */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-emerald-200 rounded-2xl p-4 text-center border border-emerald-100 shadow-sm relative group">
-            <div className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-1">
+            <div className="text-xs text-emerald-700 font-bold uppercase tracking-wider mb-1">
               Dolch Density
             </div>
-            <div className="text-3xl font-bold text-emerald-800">
+            <div className="text-3xl font-bold text-emerald-900">
               {dolchNum.toFixed(1)}% {getDynamicEmoticon(dolchNum, thresholds.dolch)}
             </div>
             <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">
@@ -154,10 +165,10 @@ export default async function BookPage({
           </div>
 
           <div className="bg-amber-200 rounded-2xl p-4 text-center border border-amber-100 shadow-sm relative group">
-            <div className="text-xs text-amber-600 font-bold uppercase tracking-wider mb-1">
+            <div className="text-xs text-amber-700 font-bold uppercase tracking-wider mb-1">
               Fry Density
             </div>
-            <div className="text-3xl font-bold text-amber-800">
+            <div className="text-3xl font-bold text-amber-900">
               {fryNum.toFixed(1)}% {getDynamicEmoticon(fryNum, thresholds.fry)}
             </div>
             <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">
@@ -166,8 +177,8 @@ export default async function BookPage({
           </div>
 
           <div className="bg-sky-200 rounded-2xl p-4 text-center border border-sky-100 shadow-sm relative group">
-            <div className="text-xs text-sky-600 font-bold uppercase tracking-wider mb-1">Dialogue</div>
-            <div className="text-3xl font-bold text-sky-800">
+            <div className="text-xs text-sky-700 font-bold uppercase tracking-wider mb-1">Dialogue</div>
+            <div className="text-3xl font-bold text-sky-900">
               {dialogNum.toFixed(1)}% {getDynamicEmoticon(dialogNum, thresholds.dialog)}
             </div>
             <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">
@@ -176,10 +187,10 @@ export default async function BookPage({
           </div>
 
           <div className="bg-violet-200 rounded-2xl p-4 text-center border border-violet-100 shadow-sm relative group">
-            <div className="text-xs text-violet-600 font-bold uppercase tracking-wider mb-1">
+            <div className="text-xs text-violet-700 font-bold uppercase tracking-wider mb-1">
               Flesch Grade
             </div>
-            <div className="text-3xl font-bold text-violet-800">
+            <div className="text-3xl font-bold text-violet-900">
               {fleschGradeNum.toFixed(1)} {gradeEmoticon(fleschGradeNum, gradeSamples)}
             </div>
             <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">
@@ -191,7 +202,7 @@ export default async function BookPage({
         <BookActions bookId={meta.sourceId} gutenbergId={meta.sourceId} />
 
         {!meta.last_processed && (
-          <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-sm">
+          <div className="mb-8 p-4 bg-amber-900/40 border border-amber-500/40 rounded-2xl text-amber-100 text-sm">
             Full analytics for this title are still processing. Gutenberg link and sample (when
             published) may still be available.
           </div>
@@ -199,30 +210,30 @@ export default async function BookPage({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
           <div className="space-y-8">
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">Text Composition</h3>
+            <div className={panel}>
+              <h3 className={panelTitle}>Text Composition</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Words</span>
-                  <span className="font-semibold">{meta.total_words?.toLocaleString() ?? '—'}</span>
+                  <span className={rowLabel}>Total Words</span>
+                  <span className={rowValue}>{meta.total_words?.toLocaleString() ?? '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Sentences</span>
-                  <span className="font-semibold">
+                  <span className={rowLabel}>Total Sentences</span>
+                  <span className={rowValue}>
                     {meta.total_sentences?.toLocaleString() ?? '—'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Unique Vocabulary</span>
-                  <span className="font-semibold">{meta.unique_words?.toLocaleString() ?? '—'}</span>
+                  <span className={rowLabel}>Unique Vocabulary</span>
+                  <span className={rowValue}>{meta.unique_words?.toLocaleString() ?? '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Words / Sentence</span>
-                  <span className="font-semibold">{meta.avg_sentence_length ?? '—'}</span>
+                  <span className={rowLabel}>Words / Sentence</span>
+                  <span className={rowValue}>{meta.avg_sentence_length ?? '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Lexical Richness</span>
-                  <span className="font-semibold">
+                  <span className={rowLabel}>Lexical Richness</span>
+                  <span className={rowValue}>
                     {meta.word_variability_ratio != null
                       ? `${(meta.word_variability_ratio * 100).toFixed(1)}%`
                       : '—'}
@@ -231,8 +242,8 @@ export default async function BookPage({
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-800 mb-1">Dolch Completion</h3>
+            <div className={panel}>
+              <h3 className="text-lg font-bold text-slate-50 mb-1">Dolch Completion</h3>
               <p className="text-xs text-slate-400 mb-5">
                 Share of each official list found in this book (breadth %)
               </p>
@@ -241,15 +252,15 @@ export default async function BookPage({
                 {dolchLevels.map(([label, pct, unique]) => (
                   <div key={label}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-slate-600 uppercase">{label}</span>
-                      <span className="text-xs font-bold text-emerald-600">
+                      <span className="text-xs font-bold text-slate-300 uppercase">{label}</span>
+                      <span className="text-xs font-bold text-emerald-300">
                         {pct}%
                         {unique != null ? (
-                          <span className="text-slate-400 font-normal"> · {unique} unique</span>
+                          <span className="text-slate-500 font-normal"> · {unique} unique</span>
                         ) : null}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5">
+                    <div className="w-full bg-slate-700/80 rounded-full h-1.5">
                       <div
                         className="bg-emerald-400 h-1.5 rounded-full transition-all"
                         style={{ width: `${pct}%` }}
@@ -262,8 +273,8 @@ export default async function BookPage({
           </div>
 
           <div className="md:col-span-2 space-y-8">
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">Grammatical Breakdown (POS)</h3>
+            <div className={panel}>
+              <h3 className={panelTitle}>Grammatical Breakdown (POS)</h3>
               <div className="h-8 w-full flex rounded-full overflow-hidden mb-4">
                 <div
                   style={{ width: `${(nouns / totalPos) * 100}%` }}
@@ -294,39 +305,39 @@ export default async function BookPage({
               <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-indigo-500" />
-                  <span className="text-slate-600">
+                  <span className="text-slate-300">
                     Nouns ({((nouns / totalPos) * 100).toFixed(1)}%)
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-rose-500" />
-                  <span className="text-slate-600">
+                  <span className="text-slate-300">
                     Verbs ({((verbs / totalPos) * 100).toFixed(1)}%)
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-amber-500" />
-                  <span className="text-slate-600">
+                  <span className="text-slate-300">
                     Adjectives ({((adjs / totalPos) * 100).toFixed(1)}%)
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-sky-500" />
-                  <span className="text-slate-600">
+                  <span className="text-slate-300">
                     Adverbs ({((advs / totalPos) * 100).toFixed(1)}%)
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="text-slate-600">
+                  <span className="text-slate-300">
                     Prepositions ({((preps / totalPos) * 100).toFixed(1)}%)
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-800 mb-6">Word Length Distribution</h3>
+            <div className={panel}>
+              <h3 className="text-lg font-bold text-slate-50 mb-6">Word Length Distribution</h3>
               <div className="h-48 flex items-end gap-2 mt-4">
                 {lengths.map((item) => {
                   const heightPct = Math.max((item.val / maxLength) * 100, 1);
@@ -339,21 +350,21 @@ export default async function BookPage({
                         {item.val}
                       </span>
                       <div
-                        className="w-full bg-violet-400 group-hover:bg-violet-800 rounded-t-sm transition-all"
+                        className="w-full bg-violet-400 group-hover:bg-violet-300 rounded-t-sm transition-all"
                         style={{ height: `${heightPct}%`, minHeight: '4px' }}
                       />
-                      <span className="text-xs text-slate-600 mt-2">{item.label}</span>
+                      <span className="text-xs text-slate-400 mt-2">{item.label}</span>
                     </div>
                   );
                 })}
               </div>
-              <p className="text-center text-xs text-slate-600 mt-2">Number of Letters</p>
+              <p className="text-center text-xs text-slate-500 mt-2">Number of Letters</p>
             </div>
           </div>
         </div>
 
         <BookFeedback bookId={meta.sourceId} />
       </div>
-    </main>
+    </div>
   );
 }
