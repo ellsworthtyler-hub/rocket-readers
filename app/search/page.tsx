@@ -1,5 +1,6 @@
 //  FILE: app/search/page.tsx
 //  Library search against rr_book_metadata + rr_book
+//  Theme filter uses rr_book.theme parent groups (not legacy Animals/Fairy Tales labels).
 
 'use client';
 import { useState, useEffect, Suspense } from 'react';
@@ -7,6 +8,7 @@ import { BookCard } from '@/components/BookCard';
 import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams } from 'next/navigation';
 import { BadgeLegend } from '@/components/BadgeLegend';
+import { RR_PARENT_THEMES, resolveThemeFilter } from '@/lib/themes';
 
 interface Book {
   id: string;
@@ -42,13 +44,16 @@ const LIST_SELECT = `
 
 function SearchContent() {
   const searchParams = useSearchParams();
-  const preSelectedTheme = searchParams.get('theme') || '';
+  // Resolve legacy URL params (e.g. ?theme=Science → Science & Technology)
+  const preSelectedTheme = resolveThemeFilter(searchParams.get('theme') || '');
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalBooks, setTotalBooks] = useState(0);
   const [libraryStats, setLibraryStats] = useState<any>(null);
+  /** Themes that currently have at least one processed book (for dropdown order/counts) */
+  const [themeOptions, setThemeOptions] = useState<{ theme: string; count: number }[]>([]);
 
   const [searchInput, setSearchInput] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
@@ -74,6 +79,39 @@ function SearchContent() {
     setActiveSearch(searchInput);
     setCurrentPage(1);
   };
+
+  // Load parent-theme counts once (from processed books only)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const counts: { theme: string; count: number }[] = [];
+      for (const t of RR_PARENT_THEMES) {
+        const { count, error } = await supabase
+          .from('rr_book_metadata')
+          .select('book_id, rr_book!inner(theme)', { count: 'exact', head: true })
+          .not('last_processed', 'is', null)
+          .eq('rr_book.theme', t);
+        if (error) {
+          console.warn('theme count failed for', t, error.message);
+          continue;
+        }
+        if ((count || 0) > 0) {
+          counts.push({ theme: t, count: count || 0 });
+        }
+      }
+      // Largest first for the dropdown
+      counts.sort((a, b) => b.count - a.count);
+      if (!cancelled) setThemeOptions(counts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Keep local theme state in sync if ?theme= changes via client navigation
+  useEffect(() => {
+    setTheme(preSelectedTheme);
+  }, [preSelectedTheme]);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -106,7 +144,11 @@ function SearchContent() {
         else query = query.lte('total_words', parseInt(wordTier, 10));
       }
 
-      if (theme !== '') query = query.ilike('rr_book.theme', `%${theme}%`);
+      // Exact match on rr_book.theme parent group (e.g. "Science & Technology")
+      const resolvedTheme = resolveThemeFilter(theme);
+      if (resolvedTheme !== '') {
+        query = query.eq('rr_book.theme', resolvedTheme);
+      }
       if (activeSearch !== '') query = query.ilike('rr_book.title', `%${activeSearch}%`);
 
       if (sortBy === 'flesch_grade' || sortBy === 'flesch_reading_ease') {
@@ -229,11 +271,20 @@ function SearchContent() {
 
           <FilterSelect label="Theme" value={theme} setter={updateFilter(setTheme)}>
             <option value="">All Themes</option>
-            <option value="Animals">Animals</option>
-            <option value="Fairy Tales">Fairy Tales</option>
-            <option value="History">History</option>
-            <option value="Adventure">Adventure</option>
-            <option value="Science">Science</option>
+            {/*
+              Options match rr_book.theme parent groups from the pipeline
+              (Literature, History, Science & Technology, …).
+              Legacy labels like Animals / Fairy Tales / Adventure are not stored
+              as parent themes — Adventure is a Literature sub-category.
+            */}
+            {(themeOptions.length > 0
+              ? themeOptions
+              : RR_PARENT_THEMES.map((t) => ({ theme: t, count: 0 }))
+            ).map(({ theme: t, count }) => (
+              <option key={t} value={t}>
+                {count > 0 ? `${t} (${count.toLocaleString()})` : t}
+              </option>
+            ))}
           </FilterSelect>
 
           <FilterSelect label="Min Dolch %" value={minDolch} setter={updateFilter(setMinDolch)}>

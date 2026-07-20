@@ -1,43 +1,52 @@
 //  FILE: app/themes/page.tsx
-//  Created with GEMINI AI (Pro)
-//  =========================
+//  Browse parent themes from processed rr_book + rr_book_metadata
 
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
+import { RR_PARENT_THEMES } from '@/lib/themes';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ThemesPage() {
-  // Fetch aggregate counts per theme. 
-  // Note: Adjust the column 'theme' if it's currently stored under 'subjects' in your schema.
-  const { data: themeData, error } = await supabase
-    .from('gutenberg_catalog')
-    .select('theme');
+  // Count processed books per official parent theme on rr_book.theme
+  const themeCounts: { theme: string; count: number }[] = [];
 
-  if (error) console.error("Error fetching themes:", error);
+  for (const theme of RR_PARENT_THEMES) {
+    const { count, error } = await supabase
+      .from('rr_book_metadata')
+      .select('book_id, rr_book!inner(theme)', { count: 'exact', head: true })
+      .not('last_processed', 'is', null)
+      .eq('rr_book.theme', theme);
 
-  // Aggregate the counts
-  const themeCounts: Record<string, number> = {};
-  (themeData || []).forEach((row) => {
-    const theme = row.theme || "Uncategorized";
-    themeCounts[theme] = (themeCounts[theme] || 0) + 1;
-  });
+    if (error) {
+      console.error(`Error counting theme ${theme}:`, error);
+      continue;
+    }
+    if ((count || 0) > 0) {
+      themeCounts.push({ theme, count: count || 0 });
+    }
+  }
 
-  const sortedThemes = Object.entries(themeCounts).sort((a, b) => b[1] - a[1]);
+  themeCounts.sort((a, b) => b.count - a.count);
+
+  const total = themeCounts.reduce((s, t) => s + t.count, 0);
 
   return (
     <div className="min-h-screen bg-slate-50 py-16">
       <div className="max-w-6xl mx-auto px-6 text-center mb-16">
-        <h1 className="text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">Explore by Theme</h1>
+        <h1 className="text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
+          Explore by Theme
+        </h1>
         <p className="text-xl text-slate-500 max-w-2xl mx-auto">
-          Find the perfect book for your classroom by browsing our curated, NLP-analyzed categories.
+          Categories follow Project Gutenberg parent groups stored on each book
+          ({total.toLocaleString()} processed titles so far).
         </p>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedThemes.map(([theme, count]) => (
-          <Link 
-            key={theme} 
+        {themeCounts.map(({ theme, count }) => (
+          <Link
+            key={theme}
             href={`/search?theme=${encodeURIComponent(theme)}`}
             className="group bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-400 transition-all text-left flex flex-col justify-between"
           >
@@ -46,7 +55,7 @@ export default async function ThemesPage() {
                 {theme}
               </h2>
               <p className="text-slate-500 mb-6">
-                Explore our collection of enhanced texts in this category.
+                Explore enhanced texts in this category.
               </p>
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 pt-4">
@@ -59,6 +68,12 @@ export default async function ThemesPage() {
             </div>
           </Link>
         ))}
+
+        {themeCounts.length === 0 && (
+          <p className="col-span-full text-center text-slate-500 py-12">
+            Theme counts will appear as books finish processing.
+          </p>
+        )}
       </div>
     </div>
   );
