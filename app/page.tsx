@@ -21,12 +21,13 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="bg-white border-b border-slate-200 py-20 px-6">
+      {/* Hero */}
+      <div className="bg-white border-b border-slate-200 py-16 md:py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-6xl font-extrabold text-slate-900 mb-6 tracking-tight">
+          <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 mb-6 tracking-tight">
             Rocket Reader
           </h1>
-          <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
             Find books with the highest sight-word coverage for your readers.
           </p>
           <Link
@@ -37,6 +38,37 @@ export default async function HomePage() {
           </Link>
         </div>
       </div>
+
+      {/* Parent / teacher intro — under title block, above Hot off the Launchpad */}
+      <section className="bg-slate-50 border-b border-slate-200 px-6 py-12 md:py-14">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-5 text-center tracking-tight">
+            Built for parents, teachers, and young readers
+          </h2>
+          <div className="space-y-4 text-slate-600 text-base md:text-lg leading-relaxed">
+            <p>
+              Every book in Rocket Reader is analyzed for the literacy building blocks that matter
+              most in early reading: high-frequency{' '}
+              <strong className="text-slate-800">Dolch and Fry sight words</strong>,{' '}
+              <strong className="text-slate-800">Heart words</strong> with irregular spellings,
+              clear <strong className="text-slate-800">syllable patterns</strong>, dialogue density,
+              readability level, and parts of speech. Those measures help you see—at a glance—how
+              approachable a text will feel for a developing or ESL reader, and which skills the
+              story will naturally reinforce.
+            </p>
+            <p>
+              Free tools let you explore the library, study book-level stats, and open a sample of
+              our enhanced ebook with interactive highlights. Premium unlocks the full interactive
+              edition and book-specific classwork packets so students can practice the same words
+              and patterns they meet in the story—building fluent word recognition so more
+              attention is free for comprehension and joy in reading.{' '}
+              <Link href="/about" className="text-emerald-700 font-semibold hover:underline">
+                Learn more about the research behind our approach →
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
 
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="flex items-center justify-between mb-8">
@@ -84,15 +116,23 @@ export default async function HomePage() {
           Ready to accelerate reading comprehension?
         </h3>
         <p className="text-slate-600 mb-8 max-w-2xl mx-auto text-lg">
-          Teachers, homeschoolers, and ESL instructors love Rocket Reader because it shows exactly
-          which books will help their students succeed.
+          Teachers, homeschoolers, and ESL instructors use Rocket Reader to choose texts that match
+          their students&apos; sight-word readiness—and to practice those words in context.
         </p>
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-3 bg-slate-900 text-white font-bold px-8 py-4 rounded-2xl hover:bg-slate-800 transition shadow-sm"
-        >
-          Explore the Archive
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            href="/search"
+            className="inline-flex items-center justify-center gap-3 bg-slate-900 text-white font-bold px-8 py-4 rounded-2xl hover:bg-slate-800 transition shadow-sm"
+          >
+            Explore the Archive
+          </Link>
+          <Link
+            href="/about"
+            className="inline-flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-800 font-bold px-8 py-4 rounded-2xl hover:border-emerald-400 transition"
+          >
+            About Our Approach
+          </Link>
+        </div>
       </div>
     </div>
   );
