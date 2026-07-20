@@ -33,14 +33,17 @@ function PremiumPageContent() {
     }
 
     try {
+      // Session is resolved server-side; send Authorization for API auth.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       const res = await fetch('/api/stripe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId: user.id,
-          email: user.email,
-          priceId: priceId 
-        }),
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ priceId }),
       });
 
       const data = await res.json();

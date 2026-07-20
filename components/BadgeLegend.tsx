@@ -1,14 +1,26 @@
-// components/BadgeLegend.tsx
+//  FILE: components/BadgeLegend.tsx
+//  Created with GEMINI AI (Pro)
+//  ================================
+
 export function BadgeLegend() {
   return (
-    <div className="mb-6 p-4 bg-white border border-slate-200 rounded-2xl text-sm">
-      <div className="font-semibold text-slate-700 mb-2">How to read the badges</div>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-1 text-xs">
-        <div>💎 Elite (Top 5%)</div>
-        <div>🚀 Incredible (Top 10%)</div>
-        <div>🔥 Great (Top 25%)</div>
-        <div>✅ Above Avg (Top 50%)</div>
-        <div>📈 Needs Work</div>
+    <div className="w-full bg-white border border-slate-200 shadow-sm rounded-2xl p-4 mb-8">
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-slate-600">
+        <span className="flex items-center gap-1">
+          <span className="text-lg">💎</span> Elite (Top 5%)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="text-lg">🚀</span> Incredible (Top 10%)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="text-lg">🔥</span> Great (Top 25%)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="text-lg">✅</span> Above Avg (Top 50%)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="text-lg">📈</span> Fair (Top 75%)
+        </span>
       </div>
     </div>
   );

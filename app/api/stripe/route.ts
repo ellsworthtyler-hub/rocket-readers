@@ -1,41 +1,69 @@
-import { NextResponse } from 'next/server';
+// app/api/stripe/route.ts — create Checkout Session (session-bound user + price allowlist)
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { getSessionUser } from '@/lib/serverAuth';
 
-// Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-03-25.dahlia', 
+  apiVersion: '2026-03-25.dahlia',
 });
 
-export async function POST(req: Request) {
-  try {
-    const { userId, email, priceId } = await req.json();
+function allowedPriceIds(): Set<string> {
+  const ids = [
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY,
+    process.env.STRIPE_PRICE_ID_MONTHLY,
+    process.env.STRIPE_PRICE_ID_YEARLY,
+  ].filter((x): x is string => !!x && x.length > 0);
+  return new Set(ids);
+}
 
-    if (!userId || !priceId) {
-      return NextResponse.json({ error: 'User ID and Price ID are required' }, { status: 400 });
+export async function POST(req: NextRequest) {
+  try {
+    const { user } = await getSessionUser(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // Create the Stripe Checkout Session
+    const body = await req.json().catch(() => ({}));
+    const priceId = typeof body.priceId === 'string' ? body.priceId : '';
+
+    // Optional: reject spoofed userId if client still sends one
+    if (body.userId && body.userId !== user.id) {
+      return NextResponse.json({ error: 'User mismatch' }, { status: 403 });
+    }
+
+    const allow = allowedPriceIds();
+    if (!priceId || !allow.has(priceId)) {
+      return NextResponse.json({ error: 'Invalid price' }, { status: 400 });
+    }
+
+    const base =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'http://localhost:3000';
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId, 
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/premium?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/premium?canceled=true`,
-      customer_email: email, 
+      success_url: `${base}/premium?success=true`,
+      cancel_url: `${base}/premium?canceled=true`,
+      customer_email: user.email || undefined,
+      client_reference_id: user.id,
       metadata: {
-        userId: userId, // CRITICAL: This exact spelling is what the webhook looks for!
+        userId: user.id,
+      },
+      subscription_data: {
+        metadata: {
+          userId: user.id,
+        },
       },
     });
 
-    // Send the URL back to the frontend button
     return NextResponse.json({ url: session.url });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Checkout error';
     console.error('Stripe Checkout Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

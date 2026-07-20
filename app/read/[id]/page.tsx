@@ -1,11 +1,5 @@
 //  FILE: app/read/[id]/page.tsx
-//  =============================
-//  UPDATED (2026-05): Aligned to rr_ schema + R2 publishing model.
-//  - URL param is the public Gutenberg source_id (never the internal surrogate).
-//  - Resolves source_id → rr_book.id (internal) only for rr_book_metadata join.
-//  - No longer queries the deprecated book_sentences / book_tokens tables.
-//  - Content now served from published HTML (Supabase Storage bridge → R2 rr-digital-products).
-//  - Free users receive the marketing sample; full interactive edition is premium-gated.
+//  URL param = public Gutenberg source_id
 
 import { supabase } from '@/lib/supabaseClient';
 import RocketReader from '@/components/ui/Rocketreader';
@@ -14,20 +8,21 @@ import Link from 'next/link';
 
 export default async function ReadPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; sample?: string }>;
 }) {
   const resolvedParams = await params;
   const resolvedSearch = await searchParams;
 
-  // IMPORTANT: The URL always uses the public Gutenberg source_id.
-  // This matches the convention used by BookCard, BookActions, and all user-facing links.
-  const sourceId = resolvedParams.id; // keep as string for exact match against rr_book.source_id
+  const sourceId = resolvedParams.id;
   const currentPage = parseInt(resolvedSearch.page || '1', 10);
+  const forceSample =
+    resolvedSearch.sample === 'true' ||
+    resolvedSearch.sample === '1' ||
+    resolvedSearch.sample === '';
 
-  // 1. Resolve public source_id → internal rr_book.id (the duality pattern)
   const { data: rrBook, error: rrBookError } = await supabase
     .from('rr_book')
     .select('id, source_id, title, author')
@@ -42,8 +37,7 @@ export default async function ReadPage({
 
   const internalBookId = rrBook.id;
 
-  // 2. Fetch processing status + stats from the new single source of truth for the website
-  const { data: metaData, error: metaError } = await supabase
+  const { data: metaData } = await supabase
     .from('rr_book_metadata')
     .select(`
       total_words,
@@ -63,8 +57,6 @@ export default async function ReadPage({
     .eq('book_id', internalBookId)
     .single();
 
-  // We intentionally do NOT notFound() here.
-  // Books can exist in rr_book while still being processed or waiting for publisher HTML.
   const isProcessed = !!(metaData?.last_processed && metaData?.has_analysis_file);
 
   const title = rrBook.title || 'Rocket Reader';
@@ -72,8 +64,6 @@ export default async function ReadPage({
 
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col">
-
-      {/* Minimalist Sticky Header (visual continuity preserved) */}
       <div className="bg-white border-b px-6 py-4 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <Link
@@ -91,21 +81,18 @@ export default async function ReadPage({
         </div>
       </div>
 
-      {/* Reading Canvas */}
       <div className="flex-grow max-w-4xl mx-auto w-full px-4 md:px-6 py-8">
         <RocketReader
-          // Public ID used everywhere the user sees it (URLs, sharing, history)
           sourceId={sourceId}
-          // Internal surrogate (only for rr_* table joins when truly needed)
           internalBookId={internalBookId}
           title={title}
           author={author}
           metadata={metaData || null}
           isProcessed={isProcessed}
           currentPage={currentPage}
+          forceSample={forceSample}
         />
       </div>
-
     </main>
   );
 }

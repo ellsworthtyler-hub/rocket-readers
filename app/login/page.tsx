@@ -1,6 +1,4 @@
-//  FILE:  app/login/page.tsx
-//  ============================
-
+// FILE: app/login/page.tsx
 'use client';
 
 import { supabase } from '@/lib/supabaseClient';
@@ -9,18 +7,20 @@ import { useState } from 'react';
 export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleOAuthSignIn = async (provider: 'google' | 'twitter' | 'facebook') => {
+  const handleOAuthSignIn = async (provider: 'google' | 'x' | 'facebook') => {
     setLoading(provider);
+    console.log(`🔑 Starting OAuth sign-in with provider: ${provider}`);
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        // This tells Supabase to send them back to your homepage after logging in
         redirectTo: `${window.location.origin}/`,
       },
     });
 
     if (error) {
       console.error(`${provider} sign-in error:`, error);
+      alert(`Sign-in failed: ${error.message}\n\nCode: ${error.code}`);
       setLoading(null);
     }
   };
@@ -51,16 +51,16 @@ export default function LoginPage() {
             {loading === 'google' ? 'Connecting...' : 'Continue with Google'}
           </button>
 
-          {/* X / TWITTER BUTTON */}
+          {/* X / TWITTER BUTTON - FIXED */}
           <button
-            onClick={() => handleOAuthSignIn('twitter')}
+            onClick={() => handleOAuthSignIn('x')}   // ← must be 'x' for the new X provider
             disabled={loading !== null}
             className="w-full flex items-center justify-center gap-3 bg-black hover:bg-zinc-800 text-white px-6 py-3 rounded-full font-semibold transition disabled:opacity-50"
           >
             <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 24.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
-            {loading === 'twitter' ? 'Connecting...' : 'Continue with X'}
+            {loading === 'x' ? 'Connecting...' : 'Continue with X'}
           </button>
 
           {/* FACEBOOK BUTTON */}
