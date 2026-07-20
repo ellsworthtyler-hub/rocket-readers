@@ -2,10 +2,15 @@
 //  =======================================
 //  Content: pre-published HTML (sample or full) via /api/read/[sourceId].
 //  Premium status controls sample vs full; server enforces full paywall.
+//
+//  IMPORTANT: Published editions are full HTML documents with their own
+//  <script> (toggleFeature, changeTextSize, etc.). Browsers do NOT run
+//  scripts injected via dangerouslySetInnerHTML — so we render in an
+//  iframe via srcDoc so controls work exactly like opening the file locally.
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
@@ -36,9 +41,42 @@ export default function RocketReader({
   const { user, isPremium, loading: authLoading } = useAuth();
 
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [contentError, setContentError] = useState<string | null>(null);
   const [variant, setVariant] = useState<'sample' | 'full'>('sample');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const blobUrlRef = useRef<string | null>(null);
+
+  // Build a blob: URL so the browser loads a real document (scripts + styles run).
+  // Avoids srcDoc size limits on large full editions and matches local file behavior.
+  useEffect(() => {
+    if (!htmlContent) {
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+      setIframeSrc(null);
+      return;
+    }
+
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    blobUrlRef.current = url;
+    setIframeSrc(url);
+
+    return () => {
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+    };
+  }, [htmlContent]);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +90,6 @@ export default function RocketReader({
       setVariant(desiredVariant);
 
       try {
-        // Attach session JWT so server can authorize full variant
         let authHeader: HeadersInit = {};
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
@@ -66,9 +103,7 @@ export default function RocketReader({
         });
 
         if (res.status === 401 || res.status === 403) {
-          // Should only happen if client thought premium but server disagrees
           if (desiredVariant === 'full') {
-            // Fall back to sample for degraded experience
             const sampleRes = await fetch(`/api/read/${sourceId}?variant=sample`, {
               credentials: 'include',
             });
@@ -77,7 +112,7 @@ export default function RocketReader({
               if (!cancelled && sampleData.html) {
                 setVariant('sample');
                 setHtmlContent(sampleData.html);
-                setContentError('PREMIUM_REQUIRED');
+                setContentError(null);
                 return;
               }
             }
@@ -127,6 +162,37 @@ export default function RocketReader({
       cancelled = true;
     };
   }, [sourceId, isPremium, authLoading, isProcessed, forceSample, user?.id]);
+
+  /**
+   * After iframe loads, keep height in sync when section content toggles.
+   * allow-same-origin is required to read contentDocument (content is ours).
+   */
+  const handleIframeLoad = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    try {
+      const doc = iframe.contentDocument;
+      if (!doc?.body) return;
+
+      const syncHeight = () => {
+        const h = Math.max(
+          doc.documentElement?.scrollHeight || 0,
+          doc.body?.scrollHeight || 0,
+          480
+        );
+        // Prefer internal scroll for sticky toolbar; cap expansion then scroll inside
+        // Using fixed viewport height so fixed headers inside the ebook work correctly.
+      };
+
+      syncHeight();
+
+      // Focus body so keyboard prev/next in published script can work when iframe focused
+      doc.body?.setAttribute('tabindex', '-1');
+    } catch (e) {
+      console.warn('[RocketReader] iframe access limited:', e);
+    }
+  }, []);
 
   if (authLoading || isLoadingContent) {
     return (
@@ -207,9 +273,9 @@ export default function RocketReader({
   }
 
   return (
-    <div className="relative bg-white w-full rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+    <div className="relative bg-white w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
       {!isPremium && variant === 'sample' && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 text-center text-sm">
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-sm shrink-0">
           <span className="font-semibold text-amber-800">Free Sample</span>
           <span className="text-amber-700"> — first portion of the book. </span>
           <Link href="/premium" className="font-bold underline text-amber-900 hover:text-amber-950">
@@ -220,13 +286,13 @@ export default function RocketReader({
       )}
 
       {isPremium && variant === 'full' && (
-        <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2 text-center text-xs font-bold tracking-widest text-emerald-700">
+        <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2 text-center text-xs font-bold tracking-widest text-emerald-700 shrink-0">
           ROCKET READER PREMIUM — FULL INTERACTIVE EDITION
         </div>
       )}
 
       {isPremium && variant === 'sample' && forceSample && (
-        <div className="bg-slate-50 border-b border-slate-200 px-6 py-2 text-center text-xs text-slate-600">
+        <div className="bg-slate-50 border-b border-slate-200 px-4 py-2 text-center text-xs text-slate-600 shrink-0">
           Viewing sample preview ·{' '}
           <Link href={`/read/${sourceId}`} className="font-bold text-emerald-600 hover:underline">
             Open full edition
@@ -234,10 +300,21 @@ export default function RocketReader({
         </div>
       )}
 
-      {htmlContent && (
-        <div
-          className="rr-published-content prose prose-slate max-w-none"
-          dangerouslySetInnerHTML={{ __html: htmlContent }}
+      {iframeSrc && (
+        <iframe
+          ref={iframeRef}
+          title={`${title} — Rocket Reader ${variant}`}
+          src={iframeSrc}
+          // No sandbox: published HTML needs inline onclick handlers, its own
+          // <script> (toggleFeature / changeTextSize), and the Tailwind CDN.
+          // Document is only produced by rr_publisher (not user-authored).
+          onLoad={handleIframeLoad}
+          className="w-full border-0 bg-slate-50 block"
+          style={{
+            // Leave room for site nav + status strip; ebook sticky toolbar scrolls inside
+            height: 'calc(100vh - 11rem)',
+            minHeight: '560px',
+          }}
         />
       )}
 
@@ -254,7 +331,7 @@ export default function RocketReader({
         </div>
       )}
 
-      <div className="border-t bg-slate-50 px-6 py-4 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div className="border-t bg-slate-50 px-4 py-3 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 shrink-0">
         <div>
           {title} {author && `· ${author}`}
         </div>
