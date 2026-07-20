@@ -4,20 +4,344 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ——— Theme tokens ——— */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --rr-mint: #34d399;
+  --rr-mint-deep: #059669;
+  --rr-gold: #fbbf24;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-body {
-  background: var(--background);
+/* Cosmic (default discovery) */
+body.theme-cosmic {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --muted: #94a3b8;
+  --card: #1e293b;
+  --line: #334155;
+  background:
+    radial-gradient(ellipse at 15% -10%, #312e81 0%, #0f172a 42%, #020617 100%);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+
+/* Calm (About / Premium / Login) */
+body.theme-calm {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --card: #ffffff;
+  --line: #e2e8f0;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 45%, #f1f5f9 100%);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+
+/* Starfield (cosmic only) */
+.cosmic-stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+    radial-gradient(2px 2px at 80px 120px, #fde68a, transparent),
+    radial-gradient(1.5px 1.5px at 160px 80px, #fff, transparent),
+    radial-gradient(2px 2px at 300px 200px, #a5f3fc, transparent),
+    radial-gradient(1px 1px at 400px 40px, #fff, transparent),
+    radial-gradient(2px 2px at 520px 160px, #fbcfe8, transparent),
+    radial-gradient(1.5px 1.5px at 200px 250px, #fff, transparent);
+  background-size: 600px 320px;
+}
+
+.font-display {
+  font-family: var(--font-fredoka), system-ui, sans-serif;
+}
+.font-calm-serif {
+  font-family: var(--font-source-serif), Georgia, serif;
+}
+
+/* ——— Cosmic components (plain CSS — avoid @apply of custom utilities) ——— */
+.btn-chunky {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-fredoka), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.9rem 1.5rem;
+  border-radius: 1rem;
+  color: #fff;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 7px 0 #065f46, 0 12px 22px rgba(16, 185, 129, 0.3);
+  transition: transform 0.1s, filter 0.15s;
+}
+.btn-chunky:hover {
+  filter: brightness(1.05);
+}
+.btn-chunky:active {
+  transform: translateY(3px);
+  box-shadow: 0 4px 0 #065f46;
+}
+.btn-chunky-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-fredoka), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.9rem 1.5rem;
+  border-radius: 1rem;
+  color: #fff;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  box-shadow: 0 7px 0 #312e81, 0 12px 22px rgba(99, 102, 241, 0.3);
+  transition: transform 0.1s, filter 0.15s;
+}
+.btn-chunky-secondary:hover {
+  filter: brightness(1.05);
+}
+.btn-chunky-secondary:active {
+  transform: translateY(3px);
+}
+
+.cosmic-panel {
+  border-radius: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  line-height: 1.65;
+  background: rgba(30, 41, 59, 0.92);
+  border: 3px solid #818cf8;
+  box-shadow: 0 0 0 6px rgba(129, 140, 248, 0.12);
+  color: #e2e8f0;
+}
+.cosmic-panel a {
+  font-weight: 800;
+  color: #fde68a;
+  text-underline-offset: 2px;
+}
+.cosmic-panel a:hover {
+  color: #fef3c7;
+  text-decoration: underline;
+}
+
+.cosmic-title {
+  font-family: var(--font-fredoka), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #fde68a, #6ee7b7, #7dd3fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cosmic-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 1.35rem;
+  padding: 1.15rem;
+  border: 3px solid #334155;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s, border-color 0.15s;
+  background: linear-gradient(160deg, #1e293b, #0f172a);
+}
+.cosmic-card:hover {
+  transform: rotate(-0.6deg) scale(1.02);
+  border-color: #34d399;
+}
+
+.cosmic-stat-dolch {
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.875rem;
+  background: #064e3b;
+  color: #6ee7b7;
+}
+.cosmic-stat-fry {
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.875rem;
+  background: #4c1d95;
+  color: #e9d5ff;
+}
+.cosmic-stat-dialog {
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.875rem;
+  background: #0c4a6e;
+  color: #7dd3fc;
+}
+.cosmic-stat-flesch {
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.875rem;
+  background: #4a044e;
+  color: #f5d0fe;
+}
+
+.cosmic-filters {
+  border-radius: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2.5rem;
+  border: 3px solid #475569;
+  background: rgba(30, 41, 59, 0.95);
+}
+
+.cosmic-input {
+  width: 100%;
+  border-radius: 1rem;
+  padding: 0.9rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border: 2px solid #475569;
+  background: #020617;
+  color: #f8fafc;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.cosmic-input:focus {
+  outline: none;
+  border-color: #34d399;
+}
+
+.cosmic-select {
+  width: 100%;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border: 2px solid #475569;
+  background: #020617;
+  color: #f8fafc;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+.cosmic-select:focus {
+  outline: none;
+  border-color: #34d399;
+}
+
+.cosmic-banner {
+  border-radius: 1.5rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  border: 4px solid #fde68a;
+  background: linear-gradient(90deg, #059669, #0d9488, #0284c7);
+}
+
+.badge-pill {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 2px solid #475569;
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* Calm */
+.calm-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.5rem;
+  padding: 2rem 1.75rem;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.06);
+  color: #334155;
+  line-height: 1.7;
+  font-size: 1.05rem;
+}
+@media (min-width: 768px) {
+  .calm-card {
+    padding: 3rem;
+  }
+}
+.calm-card h2 {
+  font-family: var(--font-source-serif), Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 1.75rem 0 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+.calm-card h2:first-child {
+  margin-top: 0;
+  border-top: none;
+  padding-top: 0;
+}
+
+.btn-calm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  padding: 0.85rem 1.5rem;
+  border-radius: 1rem;
+  background: #0f172a;
+  color: #fff;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-calm:hover {
+  background: #1e293b;
+}
+.btn-calm-emerald {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  padding: 0.85rem 1.5rem;
+  border-radius: 1rem;
+  background: #059669;
+  color: #fff;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-calm-emerald:hover {
+  background: #047857;
+}
+.btn-calm-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  padding: 0.85rem 1.5rem;
+  border-radius: 1rem;
+  background: #fff;
+  color: #0f172a;
+  text-decoration: none;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.btn-calm-outline:hover {
+  border-color: #34d399;
+}
+
+/* Book page on cosmic: keep white content cards readable */
+body.theme-cosmic main .bg-slate-50 {
+  background: transparent !important;
 }

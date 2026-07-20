@@ -1,7 +1,5 @@
 //  FILE: components/BookCard.tsx
-//  Updated:  03-05-2026 - (v.1.1) - NEW: Updated for dynamic badges and new fallback logic.
-//  Created with GEMINI AI (Pro)
-//  ===============================
+//  Cosmic-styled book cards for library / leaderboard / home
 
 import Link from 'next/link';
 
@@ -13,11 +11,10 @@ interface BookCardProps {
   fry: string;
   dialogRatio: string;
   fleschGrade: string;
-  libraryStats?: any; // Added to pass dynamic database percentiles
+  libraryStats?: any;
 }
 
 function getBadge(value: number, metricPrefix: string, stats: any, isFlesch = false): string {
-  // Fallback to static logic if database stats haven't loaded yet
   if (!stats) {
     if (isFlesch) {
       if (value <= 2) return '💎';
@@ -33,20 +30,17 @@ function getBadge(value: number, metricPrefix: string, stats: any, isFlesch = fa
     return '📈';
   }
 
-  // EPSILON prevents floating-point rounding mismatches where 69.5 < 69.5000001
-  const EPSILON = 0.001; 
+  const EPSILON = 0.001;
 
-  // Flesch Grade Logic: Lower numbers = easier reading levels
   if (isFlesch) {
-    if (value <= stats.flesch_top_90 + EPSILON) return '💎'; // Top 10% Lowest Grades
-    if (value <= stats.flesch_top_75 + EPSILON) return '🚀'; // Top 25% Lowest Grades
-    if (value <= stats.flesch_top_50 + EPSILON) return '🔥'; // Top 50% 
-    if (value <= stats.flesch_top_25 + EPSILON) return '✅'; // Top 75% 
+    if (value <= stats.flesch_top_90 + EPSILON) return '💎';
+    if (value <= stats.flesch_top_75 + EPSILON) return '🚀';
+    if (value <= stats.flesch_top_50 + EPSILON) return '🔥';
+    if (value <= stats.flesch_top_25 + EPSILON) return '✅';
     return '📈';
   }
 
-  // Standard Logic: Higher percentages are better
-  if (value >= stats[`${metricPrefix}_top_5`] - EPSILON)  return '💎';
+  if (value >= stats[`${metricPrefix}_top_5`] - EPSILON) return '💎';
   if (value >= stats[`${metricPrefix}_top_10`] - EPSILON) return '🚀';
   if (value >= stats[`${metricPrefix}_top_25`] - EPSILON) return '🔥';
   if (value >= stats[`${metricPrefix}_top_50`] - EPSILON) return '✅';
@@ -74,47 +68,48 @@ export function BookCard({
   const fryNum = parseFloat(fry);
   const dialogNum = parseFloat(dialogRatio);
   const fleschNum = parseFloat(fleschGrade);
+  const wow =
+    getBadge(dolchNum, 'dolch', libraryStats) === '💎' ||
+    getBadge(dolchNum, 'dolch', libraryStats) === '🚀';
 
   return (
-    <Link
-      href={`/book/${id}`}
-      className="flex flex-col bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-400 transition-all h-full group"
-    >
-      <div className="mb-4">
-        <h3 className="font-bold text-xl text-slate-800 line-clamp-2 group-hover:text-emerald-700 transition-colors mb-1">
+    <Link href={`/book/${id}`} className="cosmic-card group">
+      {wow && (
+        <span className="absolute top-3 right-3 bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full rotate-6">
+          WOW!
+        </span>
+      )}
+      <div className="mb-3 pr-10">
+        <h3 className="font-display font-bold text-lg text-slate-50 line-clamp-2 group-hover:text-emerald-300 transition-colors mb-1">
           {title}
         </h3>
-        <p className="text-slate-500 text-sm line-clamp-1">
+        <p className="text-slate-400 text-sm line-clamp-1 font-semibold">
           {author || 'Unknown Author'}
         </p>
       </div>
 
-      {/* 4x Grid for Stats */}
       <div className="grid grid-cols-2 gap-2 mt-auto">
-        <div className="bg-emerald-200 rounded-xl p-2 text-center border border-emerald-100">
-          <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Dolch</div>
-          <div className="text-lg font-bold text-emerald-800">
+        <div className="cosmic-stat-dolch">
+          <div className="text-[10px] uppercase tracking-wider opacity-80">Dolch</div>
+          <div>
             {toPercent(dolch)} {getBadge(dolchNum, 'dolch', libraryStats)}
           </div>
         </div>
-
-        <div className="bg-amber-200 rounded-xl p-2 text-center border border-amber-100">
-          <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Fry</div>
-          <div className="text-lg font-bold text-amber-800">
+        <div className="cosmic-stat-fry">
+          <div className="text-[10px] uppercase tracking-wider opacity-80">Fry</div>
+          <div>
             {toPercent(fry)} {getBadge(fryNum, 'fry', libraryStats)}
           </div>
         </div>
-
-        <div className="bg-sky-200 rounded-xl p-2 text-center border border-sky-100">
-          <div className="text-[10px] text-sky-600 font-bold uppercase tracking-wider">Dialogue</div>
-          <div className="text-lg font-bold text-sky-800">
+        <div className="cosmic-stat-dialog">
+          <div className="text-[10px] uppercase tracking-wider opacity-80">Dialogue</div>
+          <div>
             {toPercent(dialogRatio)} {getBadge(dialogNum, 'dialog', libraryStats)}
           </div>
         </div>
-
-        <div className="bg-violet-200 rounded-xl p-2 text-center border border-violet-100">
-          <div className="text-[10px] text-violet-600 font-bold uppercase tracking-wider">Flesch Grade</div>
-          <div className="text-lg font-bold text-violet-800">
+        <div className="cosmic-stat-flesch">
+          <div className="text-[10px] uppercase tracking-wider opacity-80">Grade</div>
+          <div>
             {fleschNum.toFixed(1)} {getBadge(fleschNum, 'flesch', libraryStats, true)}
           </div>
         </div>

@@ -26,13 +26,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center">
-        
+    <div className="flex items-center justify-center p-6 py-16">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-lg border border-slate-200 p-8 text-center">
         <div className="mb-8">
-          <div className="text-4xl mb-4">🚀</div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h1>
-          <p className="text-slate-500">Sign in to access your Rocket Reader dashboard and library.</p>
+          <div className="text-4xl mb-4" aria-hidden>
+            🚀
+          </div>
+          <h1 className="font-calm-serif text-3xl font-bold text-slate-900 mb-2">Welcome Back</h1>
+          <p className="text-slate-500">
+            Sign in to access Premium editions, packets, and your account.
+          </p>
         </div>
 
         <div className="space-y-4">

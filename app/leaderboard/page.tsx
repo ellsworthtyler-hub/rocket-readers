@@ -96,12 +96,15 @@ export default function LeaderboardPage() {
   }, [books, sortBy]);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-16">
+    <div className="max-w-7xl mx-auto px-6 py-16 pb-20">
       <div className="text-center mb-12">
-        <h1 className="text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
-          The Leaderboard
-        </h1>
-        <p className="text-slate-600 text-lg mb-8">Top 100 books ranked by key metrics</p>
+        <div className="text-5xl mb-2" aria-hidden>
+          🏆
+        </div>
+        <h1 className="cosmic-title text-4xl md:text-5xl mb-3">The Leaderboard</h1>
+        <p className="text-slate-400 text-lg mb-8 font-bold">
+          Top 100 books ranked by key literacy metrics
+        </p>
 
         <BadgeLegend />
 
@@ -114,12 +117,13 @@ export default function LeaderboardPage() {
           ].map((option) => (
             <button
               key={option.key}
+              type="button"
               onClick={() => setSortBy(option.key as any)}
-              className={`px-6 py-2.5 rounded-2xl font-medium transition-all ${
+              className={
                 sortBy === option.key
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
-                  : 'bg-white border border-slate-200 hover:border-emerald-300'
-              }`}
+                  ? 'btn-chunky text-sm py-2 px-5'
+                  : 'px-5 py-2.5 rounded-full font-display font-bold text-sm bg-slate-800 border-2 border-slate-600 text-slate-200 hover:border-emerald-400 transition'
+              }
             >
               {option.label}
             </button>
@@ -128,16 +132,16 @@ export default function LeaderboardPage() {
       </div>
 
       {loading ? (
-        <div className="text-slate-800 text-center py-24 text-2xl font-bold animate-pulse">
+        <div className="text-emerald-300 text-center py-24 text-2xl font-display font-bold animate-pulse">
           Loading Leaderboard...
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {sortedBooks.map((book) => (
             <BookCard key={book.id} {...book} libraryStats={libraryStats} />
           ))}
           {sortedBooks.length === 0 && (
-            <p className="col-span-full text-center text-slate-500 py-12">
+            <p className="col-span-full text-center text-slate-400 py-12 font-semibold">
               No processed books yet.
             </p>
           )}

@@ -206,15 +206,15 @@ function SearchContent() {
   const startIndex = (currentPage - 1) * PAGE_SIZE;
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      <h1 className="text-5xl font-bold text-center mb-4 text-slate-900 tracking-tight">
-        Search the Rocket Reader Archive
+    <div className="max-w-7xl mx-auto px-6 py-12 pb-20">
+      <h1 className="cosmic-title text-4xl md:text-5xl text-center mb-3">
+        🔍 Search the Archive
       </h1>
-      <p className="text-center text-slate-500 mb-10">
-        Help target your search with these highly specific filters.
+      <p className="text-center text-slate-400 mb-10 font-bold">
+        Target books with sight-word density, dialogue, length, and theme.
       </p>
 
-      <div className="max-w-3xl mx-auto mb-8 flex gap-3">
+      <div className="max-w-3xl mx-auto mb-8 flex gap-3 flex-wrap sm:flex-nowrap">
         <input
           type="text"
           placeholder="Search by Title..."
@@ -223,19 +223,16 @@ function SearchContent() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleTextSearch();
           }}
-          className="w-full bg-white border-2 border-slate-200 focus:border-emerald-500 rounded-2xl px-6 py-4 text-lg text-slate-900 focus:outline-none shadow-sm transition-all"
+          className="cosmic-input"
         />
-        <button
-          onClick={handleTextSearch}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 rounded-2xl shadow-sm transition-all"
-        >
+        <button type="button" onClick={handleTextSearch} className="btn-chunky shrink-0">
           Search
         </button>
       </div>
 
-      <div className="bg-slate-100 rounded-3xl p-6 mb-12 border border-slate-200">
+      <div className="cosmic-filters">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-slate-800">Advanced Analytics Filters</h3>
+          <h3 className="font-display font-bold text-slate-100 text-lg">⚙️ Mission filters</h3>
           <button
             onClick={() => {
               setTheme('');
@@ -252,7 +249,7 @@ function SearchContent() {
               setCurrentPage(1);
               setSortBy('dolch_percentage');
             }}
-            className="text-xs text-red-500 hover:underline font-bold"
+            className="text-xs text-rose-300 hover:text-rose-200 hover:underline font-bold"
           >
             Clear All
           </button>
@@ -374,27 +371,27 @@ function SearchContent() {
       </div>
 
       <div className="flex items-center justify-between mb-6 px-2">
-        <p className="text-slate-500">
+        <p className="text-slate-400 font-bold">
           Showing{' '}
-          <span className="font-bold text-emerald-600">
+          <span className="text-emerald-300">
             {totalBooks > 0 ? startIndex + 1 : 0}–{Math.min(startIndex + PAGE_SIZE, totalBooks)}
           </span>{' '}
-          of <span className="font-bold">{totalBooks.toLocaleString()}</span> books
+          of <span className="text-slate-100">{totalBooks.toLocaleString()}</span> books
         </p>
       </div>
 
       <BadgeLegend />
 
       {loading ? (
-        <div className="text-slate-800 text-center py-24 text-2xl font-bold animate-pulse">
-          Searching Library...
+        <div className="text-emerald-300 text-center py-24 text-2xl font-display font-bold animate-pulse">
+          Searching the cosmos...
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {books.length > 0 ? (
             books.map((book) => <BookCard key={book.id} {...book} libraryStats={libraryStats} />)
           ) : (
-            <div className="col-span-full text-center py-12 text-slate-500">
+            <div className="col-span-full text-center py-12 text-slate-400 font-semibold">
               No books found matching these filters. Try adjusting your search!
             </div>
           )}
@@ -409,11 +406,11 @@ function SearchContent() {
               window.scrollTo(0, 0);
             }}
             disabled={currentPage === 1}
-            className="px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl disabled:opacity-50 font-bold hover:bg-slate-50 transition"
+            className="btn-chunky-secondary text-sm py-2.5 px-5 disabled:opacity-40"
           >
             Previous
           </button>
-          <span className="text-slate-500 font-medium">
+          <span className="text-slate-400 font-bold">
             Page {currentPage} of {totalPages}
           </span>
           <button
@@ -422,7 +419,7 @@ function SearchContent() {
               window.scrollTo(0, 0);
             }}
             disabled={currentPage === totalPages}
-            className="px-6 py-3 bg-emerald-600 text-white rounded-xl disabled:opacity-50 font-bold hover:bg-emerald-700 transition"
+            className="btn-chunky text-sm py-2.5 px-5 disabled:opacity-40"
           >
             Next
           </button>
@@ -445,13 +442,13 @@ function FilterSelect({
 }) {
   return (
     <div className="flex flex-col">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 ml-1">
+      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1 ml-1">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => setter(e.target.value)}
-        className="bg-white border border-slate-300 text-slate-700 text-sm rounded-xl px-3 py-2.5 focus:border-emerald-500 focus:outline-none appearance-none cursor-pointer shadow-sm"
+        className="cosmic-select"
       >
         {children}
       </select>
@@ -463,7 +460,7 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-center py-20 animate-pulse font-bold text-slate-400">
+        <div className="text-center py-20 animate-pulse font-display font-bold text-emerald-300">
           Loading search engine...
         </div>
       }

@@ -13,16 +13,16 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-slate-50 py-12 md:py-16 px-6">
+    <div className="py-12 md:py-16 px-6">
       <div className="max-w-3xl mx-auto">
         <p className="text-center text-emerald-700 font-semibold text-sm uppercase tracking-widest mb-3">
           About Us
         </p>
-        <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 text-center tracking-tight">
+        <h1 className="font-calm-serif text-4xl md:text-5xl font-bold text-slate-900 mb-6 text-center tracking-tight">
           Helping every child become a confident reader
         </h1>
 
-        <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200 space-y-6 text-slate-700 text-base md:text-lg leading-relaxed">
+        <div className="calm-card space-y-6">
           <p>
             At Rocket Readers our mission is simple and heartfelt: help every young reader—and every
             English learner—build the strong foundation they need to become confident, lifelong
@@ -122,16 +122,10 @@ export default function AboutPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Link
-              href="/search"
-              className="inline-flex justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition"
-            >
+            <Link href="/search" className="btn-calm-emerald flex-1 justify-center">
               Browse the library
             </Link>
-            <Link
-              href="/premium"
-              className="inline-flex justify-center px-6 py-3.5 bg-white border-2 border-slate-200 hover:border-emerald-400 text-slate-800 font-bold rounded-2xl transition"
-            >
+            <Link href="/premium" className="btn-calm-outline flex-1 justify-center">
               View Premium
             </Link>
           </div>
@@ -243,6 +237,6 @@ export default function AboutPage() {
           </Link>
         </p>
       </div>
-    </main>
+    </div>
   );
 }
