@@ -39,34 +39,29 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Parent / teacher intro — under title block, above Hot off the Launchpad */}
+      {/* Selling points — under title, above Hot off the Launchpad */}
       <section className="bg-slate-50 border-b border-slate-200 px-6 py-12 md:py-14">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-5 text-center tracking-tight">
-            Built for parents, teachers, and young readers
-          </h2>
-          <div className="space-y-4 text-slate-600 text-base md:text-lg leading-relaxed">
-            <p>
-              Every book in Rocket Reader is analyzed for the literacy building blocks that matter
-              most in early reading: high-frequency{' '}
-              <strong className="text-slate-800">Dolch and Fry sight words</strong>,{' '}
-              <strong className="text-slate-800">Heart words</strong> with irregular spellings,
-              clear <strong className="text-slate-800">syllable patterns</strong>, dialogue density,
-              readability level, and parts of speech. Those measures help you see—at a glance—how
-              approachable a text will feel for a developing or ESL reader, and which skills the
-              story will naturally reinforce.
-            </p>
-            <p>
-              Free tools let you explore the library, study book-level stats, and open a sample of
-              our enhanced ebook with interactive highlights. Premium unlocks the full interactive
-              edition and book-specific classwork packets so students can practice the same words
-              and patterns they meet in the story—building fluent word recognition so more
-              attention is free for comprehension and joy in reading.{' '}
-              <Link href="/about" className="text-emerald-700 font-semibold hover:underline">
-                Learn more about the research behind our approach →
-              </Link>
-            </p>
-          </div>
+        <div className="max-w-3xl mx-auto space-y-5 text-slate-600 text-base md:text-lg leading-relaxed">
+          <p>
+            Rocket Readers turns classic public-domain books into powerful literacy tools by
+            analyzing every text for the exact building blocks young readers and English learners
+            need most. Our engine measures Dolch and Fry sight-word coverage, dialogue ratio,
+            word-length patterns, readability scores, and part-of-speech balance—then delivers
+            clear progress reports plus ready-to-use classroom packets packed with vocabulary
+            sheets, flashcards, memory games, spelling and sentence scramblers, word searches, and
+            more—all drawn directly from the book itself.
+          </p>
+          <p>
+            Parents and teachers finally get transparent data on how &ldquo;sight-word dense&rdquo; a
+            story really is, plus engaging, book-specific practice that builds automatic
+            recognition, fluency, and confidence. Whether you are supporting a beginning reader, an
+            ESL student, or a whole classroom, Rocket Readers makes high-quality, research-aligned
+            materials free and instantly usable so every child can experience the joy of successful
+            reading.{' '}
+            <Link href="/about" className="text-emerald-700 font-semibold hover:underline">
+              Learn more about our approach →
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -130,7 +125,7 @@ export default async function HomePage() {
             href="/about"
             className="inline-flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-800 font-bold px-8 py-4 rounded-2xl hover:border-emerald-400 transition"
           >
-            About Our Approach
+            About Us
           </Link>
         </div>
       </div>
