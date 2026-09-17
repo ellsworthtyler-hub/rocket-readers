@@ -1,0 +1,4 @@
+-- Phase 0 companion (apply in Supabase when convenient; not applied by this PR)
+-- Ensure upsert on_conflict=book_id works:
+-- ALTER TABLE public.rr_book_enrichment
+--   ADD CONSTRAINT rr_book_enrichment_book_id_key UNIQUE (book_id);
