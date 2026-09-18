@@ -17,7 +17,11 @@ import requests
 from dotenv import load_dotenv
 from rr_config import supabase, log_step, logger
 
+# Prefer local .env next to this file / CWD; smoke harness also loads before import.
 load_dotenv()
+_here = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_here, ".env"))
+load_dotenv(os.path.join(_here, "smoke_phase0", ".env"))
 
 GOOGLE_BOOKS_API_KEY = os.getenv("GOOGLE_BOOKS_API_KEY")
 
@@ -28,6 +32,60 @@ SHORT_TITLE_TOKEN_MAX = 2
 MIN_TITLE_MATCH_SCORE_SHORT = 0.70
 
 NO_MATCH = {"_rr_status": "no_match"}
+
+SKIPPED_NO_API_KEY = {"_rr_status": "skipped_no_api_key"}
+
+def _primary_author_for_query(author: str | None) -> str | None:
+    """
+    Gutenberg-style author blobs kill OL/GB queries (numFound=0).
+    Take the first `;`-segment, strip [Role] brackets, parentheticals,
+    and trailing `, YYYY-...` date ranges. Prefer `Surname, Initials.`
+    form when present; otherwise a short cleaned name.
+    """
+    if not author:
+        return None
+    primary = author.split(";", 1)[0].strip()
+    if not primary:
+        return None
+    # Strip bracket roles e.g. [Illustrator]
+    primary = re.sub(r"\[[^\]]*\]", "", primary)
+    # Strip parentheticals e.g. (William Wymark)
+    primary = re.sub(r"\([^)]*\)", "", primary)
+    # Strip trailing life dates: , 1863-1943 or , 1863-
+    primary = re.sub(r",\s*\d{3,4}\s*[-–—]?\s*\d{0,4}\s*$", "", primary)
+    primary = re.sub(r"\s+", " ", primary).strip(" ,;")
+    if not primary:
+        return None
+    # If still very long, keep surname (+ optional initials before next comma mess)
+    # e.g. "Jacobs, W. W." is already short enough
+    return primary or None
+
+
+# Common Gutenberg series / collection suffixes: "Story Title Collection, Part N."
+_SERIES_SUFFIX_RE = re.compile(
+    r"""(?ix)
+    ^(?P<head>.+?)
+    (?:
+        \s+(?:Deep\s+Waters|Captains\s+All|Sailor'?s\s+Knots)
+    )?
+    ,?\s+(?:Part|Book|Vol(?:ume)?)\.?\s+\d+\.?\s*$
+    """
+)
+
+
+def _primary_title_for_query(title: str | None) -> str | None:
+    """If title has a clear series/collection suffix, return the story head; else None."""
+    if not title:
+        return None
+    t = title.strip()
+    m = _SERIES_SUFFIX_RE.match(t)
+    if not m:
+        return None
+    head = re.sub(r"\s+", " ", m.group("head")).strip(" ,.-")
+    if not head or head.lower() == t.lower():
+        return None
+    return head
+
 
 
 def _normalize_title(s: str) -> str:
@@ -156,108 +214,157 @@ def _request_get(url: str, params: dict | None = None, timeout: int = 10, retrie
     raise RuntimeError(f"GET failed after retries: {last_err}")
 
 
+def _ol_pick_best(docs, title: str, author_q: str | None):
+    best = None
+    best_score = 0.0
+    min_score = _min_score_for_title(title)
+    for doc in docs:
+        cand = doc.get("title") or ""
+        score = _title_match_score(title, cand)
+        score = min(1.0, score + _author_bonus(author_q, doc.get("author_name")))
+        if not _author_required_ok(author_q, doc.get("author_name"), title):
+            continue
+        if score > best_score:
+            best_score = score
+            best = doc
+    if best is None or best_score < min_score:
+        return None, best_score, min_score
+    best = dict(best)
+    best["_rr_match_score"] = round(best_score, 3)
+    best["_rr_status"] = "ok"
+    return best, best_score, min_score
+
+
 def search_open_library(title: str, author: str = None) -> dict | None:
-    q = title
-    if author:
-        q = f"{title} {author}"
+    author_q = _primary_author_for_query(author)
+    probes = [(title, "full")]
+    primary_title = _primary_title_for_query(title)
+    if primary_title:
+        probes.append((primary_title, "primary_title"))
+
     url = "https://openlibrary.org/search.json"
+    last_best_score = 0.0
+    last_min = _min_score_for_title(title)
     try:
-        r = _request_get(url, params={"q": q, "limit": 5})
-        data = r.json()
-        docs = data.get("docs") or []
-        if not docs:
-            return None
-
-        best = None
-        best_score = 0.0
-        min_score = _min_score_for_title(title)
-        for doc in docs:
-            cand = doc.get("title") or ""
-            score = _title_match_score(title, cand)
-            score = min(1.0, score + _author_bonus(author, doc.get("author_name")))
-            if not _author_required_ok(author, doc.get("author_name"), title):
+        for probe_title, probe_kind in probes:
+            q = probe_title
+            if author_q:
+                q = f"{probe_title} {author_q}"
+            r = _request_get(url, params={"q": q, "limit": 5})
+            data = r.json()
+            docs = data.get("docs") or []
+            if not docs:
                 continue
-            if score > best_score:
-                best_score = score
-                best = doc
+            # Score against the probe title (primary) so series heads can match
+            best, best_score, min_score = _ol_pick_best(docs, probe_title, author_q)
+            last_best_score, last_min = best_score, min_score
+            if best is not None:
+                if probe_kind != "full":
+                    best["_rr_title_probe"] = probe_kind
+                    best["_rr_query_title"] = probe_title
+                best["_rr_query_author"] = author_q
+                return best
 
-        if best is None or best_score < min_score:
-            logger.info(
-                f"Open Library: no confident title match for '{title[:50]}' "
-                f"(best_score={best_score:.2f}, min={min_score:.2f})"
-            )
-            return None
-        best["_rr_match_score"] = round(best_score, 3)
-        best["_rr_status"] = "ok"
-        return best
+        logger.info(
+            f"Open Library: no confident title match for '{title[:50]}' "
+            f"(best_score={last_best_score:.2f}, min={last_min:.2f}, author_q={author_q!r})"
+        )
+        return None
     except Exception as e:
         logger.warning(f"Open Library error: {e}")
     return None
 
 
+def _gb_score_items(items, title: str | None, author_q: str | None, isbn: str | None):
+    min_score = _min_score_for_title(title or "")
+    best_vi = None
+    best_score = 0.0
+    for item in items:
+        vi = item.get("volumeInfo") or {}
+        cand_title = vi.get("title") or ""
+        if isbn and title:
+            score = _title_match_score(title, cand_title)
+            score = min(1.0, score + _author_bonus(author_q, vi.get("authors")))
+            if not _author_required_ok(author_q, vi.get("authors"), title):
+                continue
+            if score < min_score:
+                continue
+        elif isbn and not title:
+            vi = dict(vi)
+            vi["_rr_match_score"] = 0.0
+            vi["_rr_status"] = "ok"
+            vi["_rr_google_id"] = item.get("id")
+            vi["_rr_query_author"] = author_q
+            return vi, 0.0, min_score
+        else:
+            score = _title_match_score(title or "", cand_title)
+            score = min(1.0, score + _author_bonus(author_q, vi.get("authors")))
+            if not _author_required_ok(author_q, vi.get("authors"), title or ""):
+                continue
+            if score < min_score:
+                continue
+        if score > best_score:
+            best_score = score
+            best_vi = dict(vi)
+            best_vi["_rr_google_id"] = item.get("id")
+    return best_vi, best_score, min_score
+
+
 def search_google_books(isbn: str = None, title: str = None, author: str = None) -> dict | None:
     if not GOOGLE_BOOKS_API_KEY:
         logger.warning("GOOGLE_BOOKS_API_KEY missing — skipping Google Books")
-        return None
-    if isbn:
-        q = f"isbn:{isbn}"
-    elif title:
-        q = f"intitle:{title}"
-        if author:
-            q = f"{q}+inauthor:{author}"
-    else:
-        return None
+        return dict(SKIPPED_NO_API_KEY)
 
+    author_q = _primary_author_for_query(author)
     url = "https://www.googleapis.com/books/v1/volumes"
-    params = {"q": q, "key": GOOGLE_BOOKS_API_KEY, "maxResults": 5}
+
+    # Build ordered query probes
+    probes = []
+    if isbn:
+        probes.append(("isbn", f"isbn:{isbn}", title))
+    if title:
+        q = f"intitle:{title}"
+        if author_q:
+            q = f"{q}+inauthor:{author_q}"
+        probes.append(("full", q, title))
+        primary_title = _primary_title_for_query(title)
+        if primary_title:
+            q2 = f"intitle:{primary_title}"
+            if author_q:
+                q2 = f"{q2}+inauthor:{author_q}"
+            probes.append(("primary_title", q2, primary_title))
+    if not probes:
+        return None
+
     try:
-        r = _request_get(url, params=params)
-        data = r.json()
-        items = data.get("items") or []
-        if not items:
-            return None
-
-        min_score = _min_score_for_title(title or "")
-        best_vi = None
-        best_score = 0.0
-        for item in items:
-            vi = item.get("volumeInfo") or {}
-            cand_title = vi.get("title") or ""
-            if isbn and title:
-                score = _title_match_score(title, cand_title)
-                score = min(1.0, score + _author_bonus(author, vi.get("authors")))
-                if not _author_required_ok(author, vi.get("authors"), title):
-                    continue
-                if score < min_score:
-                    continue
-            elif isbn and not title:
-                # ISBN-only path without our title: still take first, but tag low confidence
-                vi = dict(vi)
-                vi["_rr_match_score"] = 0.0
-                vi["_rr_status"] = "ok"
-                vi["_rr_google_id"] = item.get("id")
-                return vi
-            else:
-                score = _title_match_score(title or "", cand_title)
-                score = min(1.0, score + _author_bonus(author, vi.get("authors")))
-                if not _author_required_ok(author, vi.get("authors"), title or ""):
-                    continue
-                if score < min_score:
-                    continue
-            if score > best_score:
-                best_score = score
-                best_vi = dict(vi)
-                best_vi["_rr_google_id"] = item.get("id")
-
-        if best_vi is None:
-            logger.info(
-                f"Google Books: no confident match for '{(title or isbn or '')[:50]}' "
-                f"(best_score={best_score:.2f}, min={min_score:.2f})"
+        last_best_score = 0.0
+        last_min = _min_score_for_title(title or "")
+        for probe_kind, q, score_title in probes:
+            params = {"q": q, "key": GOOGLE_BOOKS_API_KEY, "maxResults": 5}
+            r = _request_get(url, params=params)
+            data = r.json()
+            items = data.get("items") or []
+            if not items:
+                continue
+            best_vi, best_score, min_score = _gb_score_items(
+                items, score_title, author_q, isbn if probe_kind == "isbn" else None
             )
-            return None
-        best_vi["_rr_match_score"] = round(best_score, 3)
-        best_vi["_rr_status"] = "ok"
-        return best_vi
+            last_best_score, last_min = best_score, min_score
+            if best_vi is not None:
+                best_vi["_rr_status"] = "ok"
+                if best_vi.get("_rr_match_score") is None:
+                    best_vi["_rr_match_score"] = round(best_score, 3)
+                if probe_kind == "primary_title":
+                    best_vi["_rr_title_probe"] = probe_kind
+                    best_vi["_rr_query_title"] = score_title
+                best_vi["_rr_query_author"] = author_q
+                return best_vi
+
+        logger.info(
+            f"Google Books: no confident match for '{(title or isbn or '')[:50]}' "
+            f"(best_score={last_best_score:.2f}, min={last_min:.2f}, author_q={author_q!r})"
+        )
+        return None
     except Exception as e:
         logger.warning(f"Google Books error: {e}")
     return None
