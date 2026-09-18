@@ -5,6 +5,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getR2PresignedGetUrl, isValidSourceId, R2_PRODUCTS_BUCKET } from '@/lib/r2';
 import { requirePremium } from '@/lib/serverAuth';
+import {
+  CONTENT_QUARANTINE_REASON,
+  isQuarantinedSourceId,
+} from '@/lib/contentQuarantine';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey =
@@ -21,6 +25,17 @@ export async function GET(
 
   if (!sourceId || !isValidSourceId(sourceId)) {
     return NextResponse.json({ error: 'Invalid sourceId' }, { status: 400 });
+  }
+
+  if (isQuarantinedSourceId(sourceId)) {
+    return NextResponse.json(
+      {
+        error: CONTENT_QUARANTINE_REASON,
+        code: 'CONTENT_QUARANTINED',
+        sourceId,
+      },
+      { status: 410 }
+    );
   }
 
   const gate = await requirePremium(req);
