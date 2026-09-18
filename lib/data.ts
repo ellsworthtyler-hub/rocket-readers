@@ -65,6 +65,14 @@ export interface BookDetailMeta {
   last_processed: string | null;
   has_analysis_file: boolean | null;
   content_quarantined: boolean;
+  // Enrichment (rr_book + rr_book_enrichment) — optional, hide when absent
+  cover_url: string | null;
+  short_description: string | null;
+  isbn: string | null;
+  external_ids: Record<string, string> | null;
+  average_rating: number | null;
+  ratings_count: number | null;
+  popularity_score: number | null;
 }
 
 const META_COLS = `
@@ -186,7 +194,7 @@ export function mapBookCard(row: any): BookCardData {
 export async function resolveRrBookBySourceId(sourceId: string) {
   const { data, error } = await supabase
     .from('rr_book')
-    .select('id, source_id, title, author, theme, subjects')
+    .select('id, source_id, title, author, theme, subjects, cover_url, short_description, isbn, external_ids')
     .eq('source_id', sourceId)
     .eq('source', 'gutenberg')
     .maybeSingle();
@@ -214,6 +222,21 @@ export async function getBookMetadataForSourceId(
     console.error('getBookMetadataForSourceId:', metaErr);
   }
 
+  const { data: enrich, error: enrichErr } = await supabase
+    .from('rr_book_enrichment')
+    .select('average_rating, ratings_count, popularity_score')
+    .eq('book_id', book.id)
+    .maybeSingle();
+
+  if (enrichErr) {
+    console.error('getBookMetadataForSourceId enrichment:', enrichErr);
+  }
+
+  const externalIds =
+    book.external_ids && typeof book.external_ids === 'object'
+      ? (book.external_ids as Record<string, string>)
+      : null;
+
   return {
     sourceId: String(book.source_id),
     internalBookId: book.id,
@@ -222,6 +245,13 @@ export async function getBookMetadataForSourceId(
     theme: book.theme || 'Uncategorized',
     ...pickMetaFields(meta || {}),
     content_quarantined: isQuarantinedSourceId(book.source_id),
+    cover_url: book.cover_url ?? null,
+    short_description: book.short_description ?? null,
+    isbn: book.isbn ?? null,
+    external_ids: externalIds,
+    average_rating: enrich?.average_rating ?? null,
+    ratings_count: enrich?.ratings_count ?? null,
+    popularity_score: enrich?.popularity_score ?? null,
   };
 }
 
@@ -313,7 +343,6 @@ export async function listProcessedBooks(opts: ListBooksParams = {}) {
 
   return {
     books,
-    // Keep reported total as query count; cards filtered client-side of this page.
     // Prefer under-count over leaking quarantined titles into browse/search.
     total: Math.max(0, (count || 0) - ((data || []).length - books.length)),
     error: null,
