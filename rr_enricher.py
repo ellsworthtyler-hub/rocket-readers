@@ -374,22 +374,29 @@ def enrich_single_book(book_id: int) -> bool:
         external_ids["google_books"] = gb_id
 
     now_iso = datetime.now(timezone.utc).isoformat()
+    # Preserve existing quality_score when literacy metadata is missing (merge-only).
+    meta_has_literacy = any(
+        meta.get(k) is not None
+        for k in ("dolch_percentage", "fry_percentage", "dialog_percentage", "flesch_reading_ease")
+    )
     book_update = {
         "isbn": _merge_scalar(book.get("isbn"), resolved_isbn),
         "lccn": _merge_scalar(book.get("lccn"), lccn_val),
         "cover_url": _merge_scalar(book.get("cover_url"), cover_url),
         "short_description": _merge_scalar(book.get("short_description"), short_desc),
         "external_ids": external_ids,
-        "quality_score": round(
+        "last_enriched_at": now_iso,
+    }
+    if meta_has_literacy:
+        book_update["quality_score"] = round(
             (meta.get("dolch_percentage") or 0) * 0.35
             + (meta.get("fry_percentage") or 0) * 0.25
             + (meta.get("dialog_percentage") or 0) * 0.20
             + (meta.get("flesch_reading_ease") or 70) * 0.10
             + min(popularity_score, 100) * 0.10,
             2,
-        ),
-        "last_enriched_at": now_iso,
-    }
+        )
+    # else: leave quality_score untouched on rr_book
     supabase.table("rr_book").update(book_update).eq("id", book_id).execute()
 
     supabase.table("rr_book_enrichment").upsert(
