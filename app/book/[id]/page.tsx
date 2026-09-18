@@ -3,6 +3,7 @@
 //  Cosmic-theme book dashboard
 
 import BookActions from '@/components/ui/BookActions';
+import BookEnrichmentHero from '@/components/BookEnrichmentHero';
 import BookFeedback from '@/components/ui/BookFeedback';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -143,10 +144,20 @@ export default async function BookPage({
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
-        <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
-          {meta.title}
-        </h1>
-        <p className="text-lg text-slate-300 mb-8 font-semibold">{meta.author}</p>
+        <BookEnrichmentHero
+          title={meta.title}
+          author={meta.author}
+          gutenbergId={meta.sourceId}
+          enrichment={{
+            cover_url: meta.cover_url,
+            short_description: meta.short_description,
+            isbn: meta.isbn,
+            external_ids: meta.external_ids,
+            average_rating: meta.average_rating,
+            ratings_count: meta.ratings_count,
+            popularity_score: meta.popularity_score,
+          }}
+        />
 
         <BadgeLegend />
 
