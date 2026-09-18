@@ -4,6 +4,7 @@
 
 import BookActions from '@/components/ui/BookActions';
 import BookEnrichmentHero from '@/components/BookEnrichmentHero';
+import { CONTENT_QUARANTINE_REASON } from '@/lib/contentQuarantine';
 import BookFeedback from '@/components/ui/BookFeedback';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -210,7 +211,16 @@ export default async function BookPage({
           </div>
         </div>
 
-        <BookActions bookId={meta.sourceId} gutenbergId={meta.sourceId} />
+        {meta.content_quarantined ? (
+          <div className="mb-8 p-4 bg-amber-900/40 border border-amber-500/40 rounded-2xl text-amber-100 text-sm">
+            {CONTENT_QUARANTINE_REASON}
+          </div>
+        ) : null}
+        <BookActions
+          bookId={meta.sourceId}
+          gutenbergId={meta.sourceId}
+          contentQuarantined={!!meta.content_quarantined}
+        />
 
         {!meta.last_processed && (
           <div className="mb-8 p-4 bg-amber-900/40 border border-amber-500/40 rounded-2xl text-amber-100 text-sm">
