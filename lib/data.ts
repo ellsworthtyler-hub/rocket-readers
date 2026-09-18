@@ -1,6 +1,7 @@
 //  FILE: lib/data.ts
 //  Single source of truth for library queries against rr_book + rr_book_metadata
 import { supabase } from './supabaseClient';
+import { isQuarantinedSourceId } from './contentQuarantine';
 
 export interface BookCardData {
   id: string; // public Gutenberg source_id
@@ -63,6 +64,7 @@ export interface BookDetailMeta {
   len_15_plus: number | null;
   last_processed: string | null;
   has_analysis_file: boolean | null;
+  content_quarantined: boolean;
   // Enrichment (rr_book + rr_book_enrichment) — optional, hide when absent
   cover_url: string | null;
   short_description: string | null;
@@ -242,6 +244,7 @@ export async function getBookMetadataForSourceId(
     author: book.author || 'Unknown Author',
     theme: book.theme || 'Uncategorized',
     ...pickMetaFields(meta || {}),
+    content_quarantined: isQuarantinedSourceId(book.source_id),
     cover_url: book.cover_url ?? null,
     short_description: book.short_description ?? null,
     isbn: book.isbn ?? null,
@@ -334,9 +337,14 @@ export async function listProcessedBooks(opts: ListBooksParams = {}) {
     return { books: [] as BookCardData[], total: 0, error };
   }
 
+  const books = (data || [])
+    .map(mapBookCard)
+    .filter((b) => !isQuarantinedSourceId(b.id));
+
   return {
-    books: (data || []).map(mapBookCard),
-    total: count || 0,
+    books,
+    // Prefer under-count over leaking quarantined titles into browse/search.
+    total: Math.max(0, (count || 0) - ((data || []).length - books.length)),
     error: null,
   };
 }
