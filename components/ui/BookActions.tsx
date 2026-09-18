@@ -15,9 +15,15 @@ interface BookActionsProps {
   bookId: string | number;
   /** Same public ID for gutenberg.org link */
   gutenbergId: string | number;
+  /** When true, hide sample/full/packet CTAs (contaminated SoT). */
+  contentQuarantined?: boolean;
 }
 
-export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
+export default function BookActions({
+  bookId,
+  gutenbergId,
+  contentQuarantined = false,
+}: BookActionsProps) {
   const { isPremium, loading } = useAuth();
   const router = useRouter();
   const [packetBusy, setPacketBusy] = useState(false);
@@ -67,6 +73,25 @@ export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
       setPacketBusy(false);
     }
   };
+
+  if (contentQuarantined) {
+    return (
+      <div className="flex flex-col gap-3 mb-10 mt-[-10px]">
+        <div className="p-4 rounded-2xl border border-amber-500/40 bg-amber-900/30 text-amber-100 text-sm">
+          This edition is temporarily unavailable while we verify the source text. The Project
+          Gutenberg original remains available below.
+        </div>
+        <a
+          href={`https://www.gutenberg.org/ebooks/${gutenbergId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="py-4 px-4 border-2 border-slate-500 text-slate-200 font-bold rounded-2xl text-center bg-slate-800/80 hover:bg-slate-700 hover:border-slate-400 transition"
+        >
+          Get the FREE ebook here!
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3 mb-10 mt-[-10px]">
