@@ -5,11 +5,13 @@
  *
  * Bible: never host wrong/copyrighted text; publish EPUB/HTML only with Tyler+QA.
  * Steward signed remaps in progress — expand/shrink this list when they clear keys.
+ *
+ * Signed BLOCK: inclusive range 9001–9042 plus singleton 12711.
  */
 
-/** Inclusive range 9002–9041 plus singleton 12711. */
+/** Inclusive range 9001–9042 plus singleton 12711. */
 const QUARANTINED_SINGLETONS = new Set<number>([12711]);
-const QUARANTINE_RANGE: [number, number] = [9002, 9041];
+const QUARANTINE_RANGE: [number, number] = [9001, 9042];
 
 export function isQuarantinedSourceId(sourceId: string | number | null | undefined): boolean {
   if (sourceId == null || sourceId === '') return false;
