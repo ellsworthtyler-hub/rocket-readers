@@ -6,6 +6,10 @@ import { supabase } from '@/lib/supabaseClient';
 import RocketReader from '@/components/ui/Rocketreader';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import {
+  CONTENT_QUARANTINE_REASON,
+  isQuarantinedSourceId,
+} from '@/lib/contentQuarantine';
 
 export default async function ReadPage({
   params,
@@ -18,6 +22,17 @@ export default async function ReadPage({
   const resolvedSearch = await searchParams;
 
   const sourceId = resolvedParams.id;
+  if (isQuarantinedSourceId(sourceId)) {
+    return (
+      <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+        <h1 className="text-2xl font-bold text-white mb-4">Edition unavailable</h1>
+        <p className="text-slate-300 mb-8">{CONTENT_QUARANTINE_REASON}</p>
+        <Link href="/search" className="text-emerald-300 font-bold hover:text-emerald-200">
+          ← Back to Library
+        </Link>
+      </div>
+    );
+  }
   const currentPage = parseInt(resolvedSearch.page || '1', 10);
   const forceSample =
     resolvedSearch.sample === 'true' ||
