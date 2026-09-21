@@ -8,14 +8,34 @@
  *
  * Signed BLOCK:
  * - inclusive range 9001–9042
- * - singletons 12701, 12711
- * - inclusive range 12719–12724 (RTF-pointer stubs with 2007 copyright line)
+ * - singletons 12701, 12711, 23935
+ * - inclusive range 12719–12724 (RTF-pointer stubs)
+ * - Vaknin/Rangelovska copyrighted set (BATCH25N_VAKNIN_COPYRIGHTED.md)
+ * - Aesop PG Sound indexes 19617–19627 (audio-only; remapped → 11339)
  */
 
-const QUARANTINED_SINGLETONS = new Set<number>([12701, 12711]);
+const QUARANTINED_SINGLETONS = new Set<number>([
+  12701,
+  12711,
+  23935, // batch25m: catalogued Sonnet 23 but SoT body is Instinct; PG 23935 audio-only
+  // Vaknin / Rangelovska — PG Copyright field = Copyrighted (not PD)
+  4663,
+  4742,
+  5887,
+  8214,
+  8216,
+  8218,
+  8420,
+  8421,
+  14557,
+  28363,
+  28409,
+]);
+
 const QUARANTINE_RANGES: [number, number][] = [
   [9001, 9042],
   [12719, 12724],
+  [19617, 19627], // Aesop PG Sound (not text)
 ];
 
 export function isQuarantinedSourceId(sourceId: string | number | null | undefined): boolean {
