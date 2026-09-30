@@ -10,12 +10,11 @@
 //
 // Requires @aws-sdk/client-s3 (install with: npm install @aws-sdk/client-s3)
 //
-// Security model:
-//   - The route itself is intentionally public (the paywall is enforced in the client via premium status).
-//   - Full HTML editions are the premium asset. We still serve them here; the client simply refuses to request
-//     the "full" variant unless isPremium === true (see Rocketreader.tsx).
+// Full HTML is served only to a paid adult session or a valid class-code cookie.
+// Everyone else receives the sample, even if they ask for variant=full.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { resolvePaidAccess } from '@/lib/access';
 import { createClient } from '@supabase/supabase-js';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 
@@ -38,13 +37,17 @@ const r2Client = new S3Client({
   },
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> }
 ) {
   const { sourceId } = await params;
   const { searchParams } = new URL(req.url);
-  const variant = (searchParams.get('variant') || 'sample') as 'sample' | 'full';
+  const requested = searchParams.get('variant') === 'full' ? 'full' : 'sample';
+  const access = requested === 'full' ? await resolvePaidAccess(req) : null;
+  const variant = requested === 'full' && access?.paid ? 'full' : 'sample';
 
   if (!sourceId) {
     return NextResponse.json({ error: 'Missing sourceId' }, { status: 400 });
@@ -79,7 +82,7 @@ export async function GET(
           status: 200,
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+            'Cache-Control': 'private, no-store',
             'X-Content-Source': 'r2',
             'X-Variant': variant,
           },
@@ -103,7 +106,7 @@ export async function GET(
         status: 200,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+          'Cache-Control': 'private, no-store',
           'X-Content-Source': 'supabase-storage',
           'X-Variant': variant,
         },

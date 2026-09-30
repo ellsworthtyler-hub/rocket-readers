@@ -4,12 +4,17 @@
 'use client';
 
 import { supabase } from '@/lib/supabaseClient';
+import Link from 'next/link';
 import { useState } from 'react';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleOAuthSignIn = async (provider: 'google' | 'twitter' | 'facebook') => {
+    const next = new URLSearchParams(window.location.search).get('next');
+    if (next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/login')) {
+      window.sessionStorage.setItem('rr_next', next);
+    }
     setLoading(provider);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -26,8 +31,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="max-w-md w-full rounded-3xl shadow-xl border-[3px] border-indigo-400 bg-slate-900/90 p-8 text-center">
         
         <div className="mb-8">
           <div className="text-4xl mb-4">🚀</div>
@@ -40,7 +45,7 @@ export default function LoginPage() {
           <button
             onClick={() => handleOAuthSignIn('google')}
             disabled={loading !== null}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-6 py-3 rounded-full font-semibold transition disabled:opacity-50"
+            className="keep-light w-full flex items-center justify-center gap-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-6 py-3 rounded-full font-semibold transition disabled:opacity-50"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -76,7 +81,10 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <p className="mt-8 text-xs text-slate-400">
+        <p className="mt-8 text-sm text-slate-500">
+          Students, <Link href="/students" className="text-emerald-700 underline">enter your class code</Link> instead.
+        </p>
+        <p className="mt-4 text-xs text-slate-400">
           By signing in, you agree to our Terms of Service and Privacy Policy.
         </p>
       </div>

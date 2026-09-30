@@ -1,5 +1,6 @@
 name: Rocket Readers Gutenberg Updater
 
+# 2× daily UTC (≈ morning / evening US). Manual: Actions → Run workflow
 on:
   schedule:
     - cron: '0 9 * * *'
@@ -9,6 +10,7 @@ on:
 jobs:
   update-gutenberg:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
@@ -22,12 +24,23 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r Python_Script_Requirements.txt
+          # Prefer project requirements file; fallback minimal set for Actions
+          if [ -f Python_Script_Requirements.txt ]; then
+            pip install -r Python_Script_Requirements.txt
+          fi
+          pip install supabase requests python-dotenv
 
       - name: Run Gutenberg Updater & Send Alert
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} 
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }} 
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -u rr_gutenberg_updater.py
+
+      # Fail the job if the script exited non-zero (already default); surface summary
+      - name: Job summary
+        if: always()
+        run: |
+          echo "### Gutenberg updater finished" >> $GITHUB_STEP_SUMMARY
+          echo "Schedule: 09:00 and 21:00 UTC. Discord + Supabase rr_book/queue." >> $GITHUB_STEP_SUMMARY

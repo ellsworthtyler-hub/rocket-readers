@@ -18,7 +18,11 @@ interface BookActionsProps {
 }
 
 export default function BookActions({ bookId, gutenbergId }: BookActionsProps) {
-  const { user, isPremium } = useAuth();
+  const { isPremium, loading } = useAuth();
+
+  if (loading) {
+    return <div className="h-16 mb-10" />;
+  }
 
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-10 mt-[-10px]">

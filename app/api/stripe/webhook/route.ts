@@ -1,62 +1,45 @@
-//  app/api/stripe/webhook/route.ts
-//  =================================
-
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
-
-// 1. Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-03-25.dahlia',
-});
-
-// 2. Initialize Supabase Admin (Bypasses RLS to update profiles)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import type Stripe from 'stripe';
+import { clearPaidAccess, loadSubscription, stripe, syncProfileFromSubscription } from '@/lib/billing';
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const sig = req.headers.get('stripe-signature') as string;
+  const sig = req.headers.get('stripe-signature');
+  if (!sig) return new Response('Missing signature', { status: 400 });
 
   let event: Stripe.Event;
-
   try {
-    // 3. Verify the message is genuinely from Stripe
-    event = stripe.webhooks.constructEvent(
-      body, 
-      sig, 
-      process.env.STRIPE_WEBHOOK_SECRET! 
-    );
-  } catch (err: any) {
-    console.error(`❌ Webhook Error: ${err.message}`);
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'invalid signature';
+    console.error(`Webhook Error: ${message}`);
+    return new Response(`Webhook Error: ${message}`, { status: 400 });
   }
 
-  // 4. Handle the successful payment
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
-    
-    // We safely extract the userId here
-    const userId = session.metadata?.userId;
-
-    if (userId) {
-      // 5. Upgrade the user in the database!
-      const { error } = await supabaseAdmin
-        .from('profiles')
-        .update({ is_premium: true })
-        .eq('id', userId);
-
-      if (error) {
-        console.error('❌ Error updating Supabase:', error);
-        return new Response('Database error', { status: 500 });
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const subscriptionId = typeof session.subscription === 'string' ? session.subscription : null;
+      if (session.mode === 'subscription' && subscriptionId) {
+        const subscription = await loadSubscription(subscriptionId);
+        const userId = session.metadata?.userId || session.client_reference_id;
+        const customerId = typeof session.customer === 'string' ? session.customer : null;
+        await syncProfileFromSubscription({ userId, customerId, subscription });
       }
-      
-      console.log(`✅ SUCCESS! User ${userId} upgraded to Premium!`);
-    } else {
-      console.error('❌ Webhook received payment, but no userId was found in metadata.');
     }
+
+    if (event.type === 'customer.subscription.updated') {
+      const subscription = await loadSubscription((event.data.object as Stripe.Subscription).id);
+      await syncProfileFromSubscription({ subscription });
+    }
+
+    if (event.type === 'customer.subscription.deleted') {
+      await clearPaidAccess(event.data.object as Stripe.Subscription);
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'webhook handler failed';
+    console.error('Webhook handler error:', message);
+    return new Response('Webhook handler error', { status: 500 });
   }
 
   return NextResponse.json({ received: true });

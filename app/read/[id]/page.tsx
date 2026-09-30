@@ -71,28 +71,24 @@ export default async function ReadPage({
   const author = rrBook.author || 'Unknown Author';
 
   return (
-    <main className="min-h-screen bg-slate-50 flex flex-col">
+    <main className="min-h-screen flex flex-col">
 
-      {/* Minimalist Sticky Header (visual continuity preserved) */}
-      <div className="bg-white border-b px-6 py-4 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+      <div className="bg-slate-900/90 border-b border-amber-400 px-6 py-3 sticky top-16 z-40">
+        <div className="max-w-6xl mx-auto flex items-center justify-center gap-4 relative">
           <Link
             href={`/book/${sourceId}`}
-            className="text-slate-500 hover:text-emerald-600 font-semibold transition flex items-center gap-2"
+            className="text-emerald-300 hover:text-emerald-200 font-semibold transition flex items-center gap-2 absolute left-0"
           >
             <span className="text-lg">←</span> Back to Stats
           </Link>
 
-          <div className="text-sm md:text-base font-bold text-slate-800 text-center truncate px-4">
+          <div className="text-sm md:text-base font-bold text-white text-center truncate px-28">
             {title}
           </div>
-
-          <div className="w-[120px] hidden md:block"></div>
         </div>
       </div>
 
-      {/* Reading Canvas */}
-      <div className="flex-grow max-w-4xl mx-auto w-full px-4 md:px-6 py-8">
+      <div className="w-full flex-1">
         <RocketReader
           // Public ID used everywhere the user sees it (URLs, sharing, history)
           sourceId={sourceId}

@@ -7,6 +7,20 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/supabaseClient';
+
+const READER_FIT = `<style id="rr-reader-fit">
+  #sticky-header .justify-between,
+  .floating-bar .justify-between {
+    justify-content: center !important;
+  }
+</style>`;
+
+function prepareReaderHtml(html: string): string {
+  if (html.includes('rr-reader-fit')) return html;
+  if (html.includes('</head>')) return html.replace('</head>', `${READER_FIT}</head>`);
+  return READER_FIT + html;
+}
 
 interface RocketReaderProps {
   sourceId: string;
@@ -27,11 +41,12 @@ export default function RocketReader({
   isProcessed,
   currentPage = 1,
 }: RocketReaderProps) {
-  const { isPremium } = useAuth();
+  const { isPremium, loading: authLoading } = useAuth();
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!isProcessed) {
       setLoading(false);
       return;
@@ -42,7 +57,15 @@ export default function RocketReader({
     async function loadContent() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/read/${sourceId}?variant=${variant}`);
+        const { data } = await supabase.auth.getSession();
+        const headers: HeadersInit = {};
+        if (data.session?.access_token) {
+          headers.Authorization = `Bearer ${data.session.access_token}`;
+        }
+        const res = await fetch(`/api/read/${sourceId}?variant=${variant}`, {
+          headers,
+          cache: 'no-store',
+        });
         if (res.ok) {
           const text = await res.text();
           setHtmlContent(text);
@@ -58,7 +81,7 @@ export default function RocketReader({
     }
 
     loadContent();
-  }, [sourceId, isProcessed, isPremium]);
+  }, [sourceId, isProcessed, isPremium, authLoading]);
 
   if (loading) {
     return (
@@ -92,26 +115,12 @@ export default function RocketReader({
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
-      <div className="p-4 bg-slate-900 text-white text-sm font-medium flex items-center justify-between">
-        <div>
-          {title} {author && `by ${author}`}
-        </div>
-        <div className="text-xs text-slate-400">
-          {isPremium ? 'PREMIUM FULL EDITION' : 'FREE SAMPLE'}
-        </div>
-      </div>
-
-      <div
-        className="prose prose-slate max-w-none p-8"
-        dangerouslySetInnerHTML={{ __html: htmlContent }}
-      />
-
-      <div className="border-t p-4 text-center">
-        <Link href={`/book/${sourceId}`} className="text-emerald-600 hover:underline text-sm">
-          ← Back to book statistics
-        </Link>
-      </div>
-    </div>
+    <iframe
+      title={`${title} ${isPremium ? 'full edition' : 'sample edition'}`}
+      srcDoc={prepareReaderHtml(htmlContent)}
+      sandbox="allow-scripts allow-popups"
+      className="block w-full border-0 bg-white"
+      style={{ height: 'calc(100vh - 8.5rem)' }}
+    />
   );
 }

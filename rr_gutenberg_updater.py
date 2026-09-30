@@ -1,208 +1,295 @@
-# FILE: rr_gutenberg_updater.py — Self-contained & ULTRA-ROBUST + Discord Notification
+# FILE: rr_gutenberg_updater.py — Daily Gutenberg catalog + queue (GitHub Action)
+# Runs in rocket-readers/.github/workflows/update_gutenberg.yml
+#
+# v3.0 (2026-07):
+#   - Paginate existing source_id fetch (PostgREST default limit is 1000 — was broken)
+#   - Queue uses INTERNAL rr_book.id (FK), not Gutenberg number
+#   - English filter for RSS (do not force language="en" on non-English titles)
+#   - Prefer RSS + recent GUTINDEX years; Discord always notifies
+#   - Optional category assign hook note (subjects/bookshelves need full catalog)
+# =================================================================================
+
+from __future__ import annotations
+
 import os
 import re
 import time
-import requests
 import logging
+import requests
+from datetime import datetime, timezone
 from xml.etree import ElementTree as ET
 from supabase import create_client, Client
 
-# ====================== DIRECT CONFIG ======================
+# ====================== CONFIG ======================
 url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+if not url or not key:
+    raise SystemExit("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
+
 supabase: Client = create_client(url, key)
 
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("RocketReaders")
 
-def log_step(msg):
+PAGE_SIZE = 1000
+ENGLISH_CODES = frozenset({"en", "english"})
+
+
+def log_step(msg: str) -> None:
     logger.info(f"🚀 {msg}")
-# ============================================================
+
 
 def normalize_author(author_str: str) -> str:
     if not author_str or author_str.strip() in ["", "Unknown"]:
         return "Unknown"
-    author_str = re.sub(r'\s*\(\d{4}-\d{4}\)', '', author_str).strip()
-    if ',' in author_str:
-        parts = author_str.split(',', 1)
+    author_str = re.sub(r"\s*\(\d{4}-\d{4}\)", "", author_str).strip()
+    if "," in author_str:
+        parts = author_str.split(",", 1)
         return f"{parts[0].strip()}, {parts[1].strip() if len(parts) > 1 else ''}".strip()
     return author_str
 
-def parse_gutindex(url: str) -> dict:
-    books = {}
+
+def is_english_lang(language_field: str | None) -> bool:
+    if not language_field:
+        return True  # RSS often omits language; treat as candidate
+    parts = re.split(r"[;,]", language_field.lower())
+    return any(p.strip() in ENGLISH_CODES for p in parts)
+
+
+def fetch_all_existing_source_ids() -> set[int]:
+    """
+    Page through ALL gutenberg source_ids.
+    Critical: bare .execute() only returns the first 1000 rows.
+    """
+    existing: set[int] = set()
+    start = 0
+    while True:
+        end = start + PAGE_SIZE - 1
+        res = (
+            supabase.table("rr_book")
+            .select("source_id")
+            .eq("source", "gutenberg")
+            .order("id")
+            .range(start, end)
+            .execute()
+        )
+        batch = res.data or []
+        if not batch:
+            break
+        for row in batch:
+            sid = row.get("source_id")
+            if sid is None:
+                continue
+            try:
+                existing.add(int(sid))
+            except (TypeError, ValueError):
+                continue
+        if len(batch) < PAGE_SIZE:
+            break
+        start += PAGE_SIZE
+        # safety against infinite loop
+        if start > 500_000:
+            logger.warning("Pagination safety stop at 500k")
+            break
+    return existing
+
+
+def parse_gutindex(url: str) -> dict[int, dict]:
+    books: dict[int, dict] = {}
     try:
-        r = requests.get(url, timeout=30)
+        r = requests.get(url, timeout=60)
         r.raise_for_status()
-        lines = r.text.splitlines()
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-            match = re.search(r'(\d+)$', line)
-            if match:
-                book_id = int(match.group(1))
-                title_author = line[:match.start()].strip()
-                if " by " in title_author.lower():
-                    title, author = title_author.rsplit(" by ", 1)
-                else:
-                    title, author = title_author, "Unknown"
-                books[book_id] = {
-                    "title": title.strip(),
-                    "author": normalize_author(author.strip()),
-                    "language": "en"
-                }
-            i += 1
+        for line in r.text.splitlines():
+            line = line.strip()
+            match = re.search(r"(\d+)$", line)
+            if not match:
+                continue
+            book_id = int(match.group(1))
+            title_author = line[: match.start()].strip()
+            if " by " in title_author.lower():
+                title, author = title_author.rsplit(" by ", 1)
+            else:
+                title, author = title_author, "Unknown"
+            books[book_id] = {
+                "title": title.strip(),
+                "author": normalize_author(author.strip()),
+                "language": "en",  # GUTINDEX lines used here are English-oriented feeds
+            }
+        logger.info(f"   GUTINDEX {url.split('/')[-1]}: {len(books):,} entries")
     except Exception as e:
         logger.error(f"Error parsing {url}: {e}")
     return books
 
-def parse_rss() -> dict:
-    books = {}
+
+def parse_rss() -> dict[int, dict]:
+    books: dict[int, dict] = {}
     try:
-        r = requests.get("https://www.gutenberg.org/cache/epub/feeds/today.rss", timeout=30)
+        r = requests.get(
+            "https://www.gutenberg.org/cache/epub/feeds/today.rss", timeout=30
+        )
+        r.raise_for_status()
         root = ET.fromstring(r.content)
         for item in root.findall(".//item"):
             title_elem = item.find("title")
             link_elem = item.find("link")
-            if title_elem is None or link_elem is None: continue
+            if title_elem is None or link_elem is None:
+                continue
             full_title = title_elem.text or ""
             link = link_elem.text or ""
-            book_id_match = re.search(r'/ebooks/(\d+)', link)
-            if not book_id_match: continue
+            book_id_match = re.search(r"/ebooks/(\d+)", link)
+            if not book_id_match:
+                continue
             book_id = int(book_id_match.group(1))
+
+            # Optional language from description / dc if present
+            lang = "en"
+            # Some feeds embed language in categories
+            for cat in item.findall("category"):
+                c = (cat.text or "").strip().lower()
+                if c in ENGLISH_CODES or c.startswith("en"):
+                    lang = "en"
+                elif len(c) == 2 and c.isalpha():
+                    lang = c
+
             if " by " in full_title:
                 title, author = full_title.rsplit(" by ", 1)
             else:
                 title, author = full_title, "Unknown"
+
             books[book_id] = {
                 "title": title.strip(),
                 "author": normalize_author(author.strip()),
-                "language": "en"
+                "language": lang,
             }
+        logger.info(f"   RSS today: {len(books):,} items")
     except Exception as e:
         logger.error(f"RSS parse error: {e}")
     return books
 
+
 def get_internal_book_id(gutenberg_id: int) -> int:
     for attempt in range(10):
         try:
-            res = supabase.table("rr_book") \
-                .select("id") \
-                .eq("source", "gutenberg") \
-                .eq("source_id", str(gutenberg_id)) \
-                .single().execute()
-            if res.data and res.data.get("id"):
-                return res.data["id"]
-        except Exception:
-            pass
-        time.sleep(0.5 + attempt * 0.2)
-    raise Exception(f"Could not find internal id for Book #{gutenberg_id} after 10 attempts")
+            res = (
+                supabase.table("rr_book")
+                .select("id")
+                .eq("source", "gutenberg")
+                .eq("source_id", str(gutenberg_id))
+                .limit(1)
+                .execute()
+            )
+            if res.data and res.data[0].get("id"):
+                return int(res.data[0]["id"])
+        except Exception as e:
+            logger.debug(f"get_internal_book_id attempt {attempt}: {e}")
+        time.sleep(0.4 + attempt * 0.2)
+    raise Exception(f"Could not find internal id for Book #{gutenberg_id}")
 
-def send_discord_notification(added_books: list):
-    if not DISCORD_WEBHOOK_URL or not added_books:
+
+def send_discord(added_books: list, errors: list[str]) -> None:
+    hook_url = os.getenv("DISCORD_WEBHOOK_URL") or os.getenv("DISCORD_WEBHOOK")
+    print("\n--- DISCORD DEBUG ---")
+    if hook_url:
+        print(f"✅ SECRET FOUND: {hook_url[:35]}...")
+    else:
+        print("❌ SECRET MISSING: neither DISCORD_WEBHOOK_URL nor DISCORD_WEBHOOK set")
         return
-    count = len(added_books)
-    lines = [f"**🚀 Rocket Readers Updater** — {count} new book{'s' if count != 1 else ''} added today!\n"]
-    for g_id, title, author in added_books:
-        lines.append(f"• **#{g_id}** — {title} by {author}")
-    message = "\n".join(lines)
 
-    payload = {"content": message}
+    if added_books:
+        msg = (
+            f"🚀 **Rocket Readers Update**: Added **{len(added_books)}** new book(s) "
+            f"to `rr_book` + queue\n"
+            f"_UTC {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}_\n"
+        )
+        for g_id, title, author in added_books[:15]:
+            t = title[:40] + "..." if len(title) > 40 else title
+            msg += f"- **#{g_id}** *{t}* — {author}\n"
+        if len(added_books) > 15:
+            msg += f"_…and {len(added_books) - 15} more_\n"
+    else:
+        msg = (
+            "✅ **Rocket Readers Update**: Check complete — no new English books "
+            f"to add.\n_UTC {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}_"
+        )
+
+    if errors:
+        msg += f"\n⚠️ {len(errors)} error(s) (see Actions log)"
+
     try:
-        requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
-        logger.info(f"📧 Discord notification sent ({count} books)")
+        response = requests.post(hook_url, json={"content": msg}, timeout=15)
+        if not response.ok:
+            print(f"❌ DISCORD REJECTED: {response.status_code} - {response.text}")
+        response.raise_for_status()
+        logger.info("✅ Discord notification sent")
     except Exception as e:
-        logger.warning(f"Failed to send Discord notification: {e}")
+        logger.error(f"❌ Discord failed: {e}")
 
-def update_gutenberg():
-    log_step("GUTENBERG DAILY UPDATE STARTED (rr_ schema)")
 
-    existing = supabase.table("rr_book") \
-        .select("source_id") \
-        .eq("source", "gutenberg") \
-        .execute().data
-    existing_ids = {int(row["source_id"]) for row in existing}
+def update_gutenberg() -> bool:
+    log_step("GUTENBERG DAILY UPDATE STARTED (rr_ schema v3)")
 
-    logger.info(f"📊 rr_book already has {len(existing_ids):,} books")
+    logger.info("📊 Loading existing source_ids (paginated)...")
+    existing_ids = fetch_all_existing_source_ids()
+    logger.info(f"📊 rr_book already has {len(existing_ids):,} gutenberg source_ids")
 
-    new_books = {}
+    new_books: dict[int, dict] = {}
+    year = datetime.now(timezone.utc).year
     logger.info("📥 Fetching GUTINDEX...")
-    new_books.update(parse_gutindex("https://www.gutenberg.org/dirs/GUTINDEX.2025"))
-    new_books.update(parse_gutindex("https://www.gutenberg.org/dirs/GUTINDEX.2026"))
+    # Current + previous year (PG rolls GUTINDEX.YYYY)
+    for y in (year - 1, year, year + 1):
+        new_books.update(parse_gutindex(f"https://www.gutenberg.org/dirs/GUTINDEX.{y}"))
+
     logger.info("📥 Fetching daily RSS...")
     new_books.update(parse_rss())
 
-    missing = {bid: data for bid, data in new_books.items() if bid not in existing_ids}
-    logger.info(f"🎯 Found {len(missing):,} new books to add")
+    missing = {
+        bid: data
+        for bid, data in new_books.items()
+        if bid not in existing_ids and is_english_lang(data.get("language"))
+    }
+    logger.info(f"🎯 Found {len(missing):,} new English books to add")
 
-    added_books = []  # for notification
+    added_books: list[tuple] = []
+    errors: list[str] = []
 
-    for gutenberg_id, meta in missing.items():
+    for gutenberg_id, meta in sorted(missing.items()):
         try:
             book_payload = {
                 "source": "gutenberg",
                 "source_id": str(gutenberg_id),
                 "title": meta["title"],
                 "author": meta["author"],
-                "language": meta["language"]
+                "language": meta.get("language") or "en",
+                # theme stays null/old until full catalog sync or category assign
             }
-            supabase.table("rr_book").upsert(book_payload).execute()
-            time.sleep(0.8)
+            # Partial upsert: do not wipe enrichment on conflict (new rows only in practice)
+            supabase.table("rr_book").upsert(
+                book_payload, on_conflict="source,source_id"
+            ).execute()
+            time.sleep(0.35)
 
             internal_id = get_internal_book_id(gutenberg_id)
 
-            supabase.table("rr_processing_queue").upsert({
-                "book_id": internal_id,
-                "status": "pending"
-            }).execute()
+            supabase.table("rr_processing_queue").upsert(
+                {"book_id": internal_id, "status": "pending"},
+                on_conflict="book_id",
+            ).execute()
 
             added_books.append((gutenberg_id, meta["title"], meta["author"]))
-            logger.info(f"✅ Added Book #{gutenberg_id} (internal #{internal_id}) — {meta['title'][:60]}...")
+            logger.info(
+                f"✅ Added #{gutenberg_id} (internal {internal_id}) — {meta['title'][:60]}"
+            )
         except Exception as e:
+            err = f"#{gutenberg_id}: {e}"
+            errors.append(err)
             logger.warning(f"⚠️ Failed to add Book #{gutenberg_id}: {e}")
 
-   # ==========================================
-    # DISCORD NOTIFICATION ENGINE (X-RAY MODE)
-    # ==========================================
-    # Check both variable names just in case!
-    hook_url = os.getenv("DISCORD_WEBHOOK_URL") or os.getenv("DISCORD_WEBHOOK")
-    
-    print("\n--- DISCORD DEBUG DIAGNOSTICS ---")
-    if hook_url:
-        # Print the first 35 chars to prove Python can actually see the URL
-        print(f"✅ SECRET FOUND: {hook_url[:35]}...") 
-    else:
-        print("❌ SECRET MISSING: Python sees 'None'. GitHub is not passing the secret.")
-    print("---------------------------------\n")
-
-    if hook_url:
-        logger.info("Attempting to send notification to Discord...")
-        
-        if added_books:
-            msg = f"🚀 **Rocket Readers Update**: Added **{len(added_books)}** new books to the queue!\n"
-            for b in added_books[:10]:
-                title = b[1][:40] + "..." if len(b[1]) > 40 else b[1]
-                msg += f"- *{title}* by {b[2]}\n"
-        else:
-            msg = "✅ **Rocket Readers Update**: Routine check complete. No new books found on Gutenberg today."
-
-        # Fire the webhook
-        try:
-            response = requests.post(hook_url, json={"content": msg})
-            # This will force Python to print the EXACT reason Discord rejected it (e.g., 401 Unauthorized, 400 Bad Request)
-            if not response.ok:
-                print(f"❌ DISCORD REJECTED PAYLOAD: {response.status_code} - {response.text}")
-            response.raise_for_status()
-            logger.info("✅ Discord notification sent successfully!")
-        except Exception as e:
-            logger.error(f"❌ Failed to send Discord message: {e}")
-            
-    else:
-        logger.warning("DISCORD_WEBHOOK_URL not found. Skipping notification.")
-
-    log_step("GUTENBERG UPDATE COMPLETE")
+    send_discord(added_books, errors)
+    log_step(
+        f"GUTENBERG UPDATE COMPLETE — added {len(added_books)}, errors {len(errors)}"
+    )
     return True
+
 
 if __name__ == "__main__":
     update_gutenberg()

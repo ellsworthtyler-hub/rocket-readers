@@ -78,10 +78,10 @@ export function BookCard({
   return (
     <Link
       href={`/book/${id}`}
-      className="flex flex-col bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-400 transition-all h-full group"
+      className="flex flex-col rounded-3xl p-6 border-[3px] border-slate-700 bg-gradient-to-br from-slate-800 to-slate-950 shadow-sm hover:-rotate-1 hover:scale-[1.02] hover:border-emerald-400 transition-all h-full group"
     >
       <div className="mb-4">
-        <h3 className="font-bold text-xl text-slate-800 line-clamp-2 group-hover:text-emerald-700 transition-colors mb-1">
+        <h3 className="font-bold text-xl text-white line-clamp-2 group-hover:text-emerald-300 transition-colors mb-1">
           {title}
         </h3>
         <p className="text-slate-500 text-sm line-clamp-1">
@@ -91,30 +91,30 @@ export function BookCard({
 
       {/* 4x Grid for Stats */}
       <div className="grid grid-cols-2 gap-2 mt-auto">
-        <div className="bg-emerald-200 rounded-xl p-2 text-center border border-emerald-100">
-          <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Dolch</div>
-          <div className="text-lg font-bold text-emerald-800">
+        <div className="bg-emerald-950 rounded-xl p-2 text-center border border-emerald-800">
+          <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">Dolch</div>
+          <div className="text-lg font-bold text-emerald-200">
             {toPercent(dolch)} {getBadge(dolchNum, 'dolch', libraryStats)}
           </div>
         </div>
 
-        <div className="bg-amber-200 rounded-xl p-2 text-center border border-amber-100">
-          <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Fry</div>
-          <div className="text-lg font-bold text-amber-800">
+        <div className="bg-violet-950 rounded-xl p-2 text-center border border-violet-800">
+          <div className="text-[10px] text-violet-300 font-bold uppercase tracking-wider">Fry</div>
+          <div className="text-lg font-bold text-violet-200">
             {toPercent(fry)} {getBadge(fryNum, 'fry', libraryStats)}
           </div>
         </div>
 
-        <div className="bg-sky-200 rounded-xl p-2 text-center border border-sky-100">
-          <div className="text-[10px] text-sky-600 font-bold uppercase tracking-wider">Dialogue</div>
-          <div className="text-lg font-bold text-sky-800">
+        <div className="bg-sky-950 rounded-xl p-2 text-center border border-sky-800">
+          <div className="text-[10px] text-sky-300 font-bold uppercase tracking-wider">Dialogue</div>
+          <div className="text-lg font-bold text-sky-200">
             {toPercent(dialogRatio)} {getBadge(dialogNum, 'dialog', libraryStats)}
           </div>
         </div>
 
-        <div className="bg-violet-200 rounded-xl p-2 text-center border border-violet-100">
-          <div className="text-[10px] text-violet-600 font-bold uppercase tracking-wider">Flesch Grade</div>
-          <div className="text-lg font-bold text-violet-800">
+        <div className="bg-fuchsia-950 rounded-xl p-2 text-center border border-fuchsia-800">
+          <div className="text-[10px] text-fuchsia-300 font-bold uppercase tracking-wider">Flesch Grade</div>
+          <div className="text-lg font-bold text-fuchsia-200">
             {fleschNum.toFixed(1)} {getBadge(fleschNum, 'flesch', libraryStats, true)}
           </div>
         </div>

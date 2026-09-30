@@ -1,173 +1,254 @@
-//  FILE:  app/premium/page.tsx
-//  ============================
 'use client';
 
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
+import type { PaidPlan } from '@/lib/plans';
 
-/**
- * 1. INNER COMPONENT
- * We move all the logic using useSearchParams into this sub-component.
- */
+const sharedFeatures = [
+  'Enhanced Rocket Reader editions',
+  'Sight-word and parts-of-speech highlights',
+  'Charts and word-length reports',
+  'Classwork packets',
+  'One class code students type on the Students page',
+];
+
 function PremiumPageContent() {
-  const { user, isPremium, loading, refreshProfile } = useAuth();
+  const { user, adultPlan, hasBilling, loading, refreshProfile } = useAuth();
   const searchParams = useSearchParams();
-  const success = searchParams.get('success');
+  const canceled = searchParams.get('canceled');
+  const [error, setError] = useState<string | null>(null);
+  const [busyPlan, setBusyPlan] = useState<PaidPlan | null>(null);
 
-  // Auto-refresh after Stripe success
-  useEffect(() => {
-    if (success === 'true' && user) {
-      console.log('✅ Stripe success detected — refreshing profile');
-      refreshProfile();
-    }
-  }, [success, user, refreshProfile]);
-
-  const handleSubscribe = async (priceId: string) => {
-    console.log('🚀 Subscribe button clicked for price:', priceId);
-    if (!user) {
-      alert('Please log in first!');
-      return;
-    }
-
+  const handleSubscribe = async (plan: PaidPlan) => {
+    setError(null);
+    if (!user) return;
+    setBusyPlan(plan);
     try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setError('Please log in first.');
+        return;
+      }
       const res = await fetch('/api/stripe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId: user.id,
-          email: user.email,
-          priceId: priceId 
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan }),
       });
-
-      const data = await res.json();
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        console.error(data.error);
-        alert("Failed to create checkout session.");
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.error || 'Checkout failed.');
+        return;
+      }
+      if (body.url) {
+        window.location.href = body.url;
+        return;
+      }
+      if (body.updated) {
+        await refreshProfile();
+        window.location.href = '/account?switched=1';
       }
     } catch (err) {
       console.error(err);
+      setError('Checkout failed.');
+    } finally {
+      setBusyPlan(null);
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
-  };
-
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-xl">Loading...</div>;
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center text-xl">Loading...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-16">
-      <div className="max-w-4xl mx-auto px-6">
+    <div className="min-h-screen py-16">
+      <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4">Unlock Rocket Reader Premium</h1>
-          <p className="text-xl text-slate-600">Enhanced editions with sight-word highlights, charts, and downloads</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Choose a Rocket Readers plan</h1>
+          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            Free keeps the library and the stats. Premium and Teacher open the same enhanced books and classwork packets.
+          </p>
         </div>
 
-        {success === 'true' && (
-          <div className="bg-emerald-100 border border-emerald-400 text-emerald-800 px-6 py-4 rounded-3xl text-center mb-8">
-            🎉 Payment successful! Upgrading your account now…
+        {canceled === 'true' && (
+          <div className="bg-amber-50 border border-amber-300 text-amber-900 px-6 py-4 rounded-3xl text-center mb-8">
+            Checkout was canceled. No charge was made.
+          </div>
+        )}
+        {error && (
+          <div className="bg-rose-50 border border-rose-300 text-rose-800 px-6 py-4 rounded-3xl text-center mb-8">
+            {error}
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-          {/* Free Tier */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 flex flex-col">
-            <h2 className="text-2xl font-semibold mb-2">Free</h2>
-            <p className="text-slate-500 mb-6">Discovery &amp; stats</p>
-            <ul className="space-y-4 mb-8 text-sm flex-grow">
-              <li>✓ Full search library</li>
-              <li>✓ Book statistics</li>
-              <li>✓ Gutenberg links</li>
-              <li>✓ Sample enhanced preview</li>
-            </ul>
-            <div className="text-4xl font-bold mb-8">$0</div>
-            <Link href="/search" className="block text-center py-4 bg-slate-900 text-white rounded-3xl font-medium">Continue Free</Link>
-          </div>
+        <div className="grid lg:grid-cols-3 gap-6">
+          <PlanCard
+            name="Free"
+            audience="Look around"
+            price="$0"
+            period=""
+            features={[
+              'Full search library',
+              'Book statistics',
+              'Gutenberg links',
+              'Sample enhanced preview',
+            ]}
+            action={<Link href="/search" className="block text-center py-4 bg-slate-900 text-white rounded-3xl font-medium">Continue free</Link>}
+          />
 
-          {/* Premium Tier */}
-          <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-3xl p-8 relative flex flex-col">
-            <div className="absolute -top-3 right-6 bg-amber-400 text-emerald-900 text-xs font-bold px-4 py-1 rounded-3xl">RECOMMENDED</div>
-            <h2 className="text-2xl font-semibold mb-2">Premium</h2>
-            <p className="opacity-90 mb-6">Full enhanced readers</p>
+          <PlanCard
+            name="Premium"
+            audience="Parents and homeschoolers"
+            price="$5"
+            period="/month"
+            note="One class code, meant for up to 6 students. We do not count or block extra students."
+            highlighted
+            features={['Everything in Free', ...sharedFeatures]}
+            action={
+              <PlanButton
+                plan="premium"
+                current={adultPlan}
+                signedIn={!!user}
+                busy={busyPlan === 'premium'}
+                highlighted
+                hasBilling={hasBilling}
+                onSubscribe={handleSubscribe}
+              />
+            }
+          />
 
-            <div className="flex items-baseline gap-2 mb-8">
-              <span className="text-6xl font-bold">$4.99</span>
-              <span className="text-xl opacity-75">/mo</span>
-              <span className="ml-auto text-sm bg-white/20 px-3 py-1 rounded-2xl">or $49.99/year</span>
-            </div>
-
-            <ul className="space-y-4 mb-8 text-sm flex-grow">
-              <li>✓ Everything in Free</li>
-              <li>✓ Unlimited enhanced Rocket Reader editions</li>
-              <li>✓ Toggle Dolch / Fry / POS highlights</li>
-              <li>✓ Charts + word-length reports</li>
-              <li>✓ One-click EPUB/PDF download</li>
-            </ul>
-
-            {user ? (
-              isPremium ? (
-                <div className="text-center py-8 bg-white/20 rounded-3xl font-semibold text-2xl border border-white/30">
-                  ✅ You are Premium!
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  {/* Monthly Button */}
-                  <button 
-                    onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY!)}
-                    className="flex-1 py-4 bg-white text-emerald-700 rounded-2xl font-semibold hover:bg-emerald-50 transition shadow-sm border border-emerald-100 flex flex-col items-center justify-center"
-                  >
-                    <span className="text-lg">Monthly</span>
-                    <span className="text-xs font-normal text-slate-500 mt-1">$4.99 / mo</span>
-                  </button>
-
-                  {/* Yearly Button (Best Value) */}
-                  <button 
-                    onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY!)}
-                    className="flex-1 py-4 bg-emerald-800 text-white rounded-2xl font-semibold hover:bg-emerald-900 transition shadow-md relative flex flex-col items-center justify-center border border-emerald-500"
-                  >
-                    <div className="absolute -top-3 bg-amber-400 text-amber-900 text-[10px] uppercase tracking-wide font-bold px-3 py-0.5 rounded-full shadow-sm">
-                      Save 16%
-                    </div>
-                    <span className="text-lg">Annually</span>
-                    <span className="text-xs font-normal text-emerald-200 mt-1">$49.99 / yr</span>
-                  </button>
-                </div>
-              )
-            ) : (
-              <button 
-                onClick={() => alert('Please log in first using the top navbar')}
-                className="w-full py-4 bg-white text-emerald-700 rounded-3xl font-semibold text-lg hover:bg-emerald-50"
-              >
-                Sign in to Subscribe
-              </button>
-            )}
-
-            {user && (
-              <button onClick={handleLogout} className="mt-6 w-full py-3 text-white/80 hover:text-white text-sm">Log out</button>
-            )}
-          </div>
+          <PlanCard
+            name="Teacher"
+            audience="Public school classrooms"
+            price="$25"
+            period="/month"
+            note="One class code, meant for up to 30 students. We do not count or block extra students."
+            features={['Everything in Premium', 'The same books and packets, sized for a class']}
+            action={
+              <PlanButton
+                plan="teacher"
+                current={adultPlan}
+                signedIn={!!user}
+                busy={busyPlan === 'teacher'}
+                hasBilling={hasBilling}
+                onSubscribe={handleSubscribe}
+              />
+            }
+          />
         </div>
+
+        <p className="text-center text-slate-500 mt-10 max-w-2xl mx-auto">
+          You sign in with Google, X, or Facebook, then subscribe. Students do not create accounts.
+          They enter the class code from your Account page at <Link href="/students" className="text-emerald-700 underline">Students</Link>.
+        </p>
       </div>
     </div>
   );
 }
 
-/**
- * 2. MASTER WRAPPER
- * This is the only 'default export'. It wraps our content in Suspense
- * to satisfy the Next.js production build requirements.
- */
+function PlanCard({
+  name,
+  audience,
+  price,
+  period,
+  note,
+  features,
+  action,
+  highlighted = false,
+}: {
+  name: string;
+  audience: string;
+  price: string;
+  period: string;
+  note?: string;
+  features: string[];
+  action: ReactNode;
+  highlighted?: boolean;
+}) {
+  return (
+    <div className={`rounded-3xl p-8 flex flex-col border ${highlighted ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white border-slate-200'}`}>
+      <h2 className="text-2xl font-semibold">{name}</h2>
+      <p className={`mb-6 ${highlighted ? 'text-emerald-100' : 'text-slate-500'}`}>{audience}</p>
+      <div className="flex items-baseline gap-1 mb-4">
+        <span className="text-5xl font-bold">{price}</span>
+        {period && <span className={highlighted ? 'text-emerald-100' : 'text-slate-500'}>{period}</span>}
+      </div>
+      {note && <p className={`text-sm mb-6 ${highlighted ? 'text-emerald-50' : 'text-slate-600'}`}>{note}</p>}
+      <ul className="space-y-3 mb-8 text-sm flex-grow">
+        {features.map((feature) => <li key={feature}>✓ {feature}</li>)}
+      </ul>
+      {action}
+    </div>
+  );
+}
+
+function PlanButton({
+  plan,
+  current,
+  signedIn,
+  busy,
+  highlighted = false,
+  hasBilling,
+  onSubscribe,
+}: {
+  plan: PaidPlan;
+  current: string | null;
+  signedIn: boolean;
+  busy: boolean;
+  highlighted?: boolean;
+  hasBilling: boolean;
+  onSubscribe: (plan: PaidPlan) => void;
+}) {
+  const solid = highlighted
+    ? 'block text-center w-full py-4 bg-white text-emerald-800 rounded-3xl font-semibold'
+    : 'block text-center w-full py-4 bg-emerald-700 text-white rounded-3xl font-semibold';
+
+  if (!signedIn) {
+    return (
+      <Link href="/login?next=/premium" className={solid}>
+        Sign in to subscribe
+      </Link>
+    );
+  }
+
+  if (current === plan && hasBilling) {
+    return (
+      <Link href="/account" className={highlighted
+        ? 'block text-center py-4 bg-white/15 rounded-3xl font-semibold border border-white/40'
+        : 'block text-center py-4 bg-emerald-50 text-emerald-900 rounded-3xl font-semibold'}>
+        This is your plan
+      </Link>
+    );
+  }
+
+  if (current === plan && !hasBilling) {
+    return (
+      <button type="button" onClick={() => onSubscribe(plan)} disabled={busy} className={`${solid} disabled:opacity-60`}>
+        {busy ? 'Working…' : 'Set up billing'}
+      </button>
+    );
+  }
+
+  const label = current === 'premium' || current === 'teacher'
+    ? `Switch to ${plan === 'teacher' ? 'Teacher' : 'Premium'}`
+    : `Subscribe ${plan === 'teacher' ? 'Teacher' : 'Premium'}`;
+
+  return (
+    <button type="button" onClick={() => onSubscribe(plan)} disabled={busy} className={`${solid} disabled:opacity-60`}>
+      {busy ? 'Working…' : label}
+    </button>
+  );
+}
+
 export default function PremiumPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-xl text-slate-600">Loading checkout...</div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-xl text-slate-600">Loading plans...</div>}>
       <PremiumPageContent />
     </Suspense>
   );

@@ -5,7 +5,9 @@ import { useAuth } from '@/components/AuthProvider';
 import Link from 'next/link';
 
 export default function ClientBookAction({ id }: { id: string }) {
-  const { isPremium } = useAuth();
+  const { isPremium, loading } = useAuth();
+
+  if (loading) return <div className="h-16" />;
 
   const handleDownload = (format: 'epub' | 'pdf') => {
     if (!isPremium) return;
@@ -20,7 +22,7 @@ export default function ClientBookAction({ id }: { id: string }) {
     return (
       <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
         <a
-          href={`/analyze/${id}`}
+          href={`/read/${id}`}
           className="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-4 rounded-3xl transition text-lg"
         >
           Open Full Rocket Reader Edition →
@@ -51,7 +53,7 @@ export default function ClientBookAction({ id }: { id: string }) {
         href="/premium"
         className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-10 py-4 rounded-3xl transition text-lg"
       >
-        Upgrade to Premium to unlock full interactive edition
+        Choose a plan to unlock the full edition
       </a>
     </div>
   );
