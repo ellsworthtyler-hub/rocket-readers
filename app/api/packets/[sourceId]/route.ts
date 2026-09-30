@@ -1,67 +1,95 @@
-// Streams a classwork packet PDF from Cloudflare R2.
-// Keys are {sourceId}_cosmic_packet.pdf in the rr-digital-products bucket.
+// FILE: app/api/packets/[sourceId]/route.ts
+// Premium-gated classwork packet download (cosmic PDF on R2).
 
 import { NextRequest, NextResponse } from 'next/server';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { createClient } from '@supabase/supabase-js';
 import { resolvePaidAccess } from '@/lib/access';
+import { getR2PresignedGetUrl, isValidSourceId, R2_PRODUCTS_BUCKET } from '@/lib/r2';
+import { isUserPremium } from '@/lib/serverAuth';
+import {
+  CONTENT_QUARANTINE_REASON,
+  isQuarantinedSourceId,
+} from '@/lib/contentQuarantine';
 
-const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
-
-export const dynamic = 'force-dynamic';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> }
 ) {
-  const { sourceId } = await params;
-  if (!/^\d+$/.test(sourceId || '')) {
-    return NextResponse.json({ error: 'Missing book id' }, { status: 400 });
+  const { sourceId: rawId } = await params;
+  const sourceId = (rawId || '').trim();
+  const { searchParams } = new URL(req.url);
+  const preferRedirect = searchParams.get('redirect') === '1';
+
+  if (!sourceId || !isValidSourceId(sourceId)) {
+    return NextResponse.json({ error: 'Invalid sourceId' }, { status: 400 });
   }
 
-  const access = await resolvePaidAccess(req);
-  if (!access.paid) {
+  if (isQuarantinedSourceId(sourceId)) {
     return NextResponse.json(
-      { error: 'Classwork packets are part of Premium and Teacher.' },
-      { status: 401 }
+      {
+        error: CONTENT_QUARANTINE_REASON,
+        code: 'CONTENT_QUARANTINED',
+        sourceId,
+      },
+      { status: 410 }
     );
   }
 
-  const key = `${sourceId}_cosmic_packet.pdf`;
+  const access = await resolvePaidAccess(req);
+  const legacyPremium = !access.paid && access.userId ? await isUserPremium(access.userId) : false;
+  if (!access.paid && !legacyPremium) {
+    const signedIn = !!access.userId;
+    return NextResponse.json(
+      {
+        error: signedIn ? 'Premium subscription required' : 'Authentication required',
+        code: signedIn ? 'PREMIUM_REQUIRED' : 'AUTH_REQUIRED',
+      },
+      { status: signedIn ? 403 : 401 }
+    );
+  }
+
   try {
-    const response = await r2Client.send(new GetObjectCommand({
-      Bucket: 'rr-digital-products',
-      Key: key,
-    }));
-    if (!response.Body) {
-      return NextResponse.json({ error: 'Packet file was empty', sourceId }, { status: 404 });
+    const r2Key = `${sourceId}_cosmic_packet.pdf`;
+    const signed = await getR2PresignedGetUrl(r2Key, 300, R2_PRODUCTS_BUCKET);
+    if (signed) {
+      if (preferRedirect) return NextResponse.redirect(signed, 302);
+      return NextResponse.json({
+        url: signed,
+        source: 'r2',
+        key: r2Key,
+        expiresIn: 300,
+      });
     }
 
-    const bytes = await response.Body.transformToByteArray();
-    return new NextResponse(Buffer.from(bytes), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${sourceId}_cosmic_packet.pdf"`,
-        'Cache-Control': 'private, no-store',
-        'X-Content-Source': 'r2',
-      },
+    const storageClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
-  } catch (err: unknown) {
-    const name = err && typeof err === 'object' && 'name' in err ? String(err.name) : '';
-    if (name === 'NoSuchKey' || name === 'NotFound') {
-      return NextResponse.json(
-        { error: 'This classwork packet has not been published yet.', sourceId },
-        { status: 404 }
-      );
+
+    for (const key of [`${sourceId}_cosmic_packet.pdf`, `${sourceId}_classwork.pdf`]) {
+      const { data, error } = await storageClient.storage
+        .from('classwork')
+        .createSignedUrl(key, 300);
+      if (!error && data?.signedUrl) {
+        if (preferRedirect) return NextResponse.redirect(data.signedUrl, 302);
+        return NextResponse.json({
+          url: data.signedUrl,
+          source: 'supabase-storage',
+          key,
+          expiresIn: 300,
+        });
+      }
     }
-    console.error(`[api/packets] R2 error for ${key}`);
-    return NextResponse.json({ error: 'Could not open the packet from Cloudflare.' }, { status: 502 });
+
+    return NextResponse.json(
+      { error: 'Classwork packet not yet available', sourceId },
+      { status: 404 }
+    );
+  } catch (err) {
+    console.error('[api/packets] error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

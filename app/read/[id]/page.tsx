@@ -1,33 +1,44 @@
 //  FILE: app/read/[id]/page.tsx
-//  =============================
-//  UPDATED (2026-05): Aligned to rr_ schema + R2 publishing model.
-//  - URL param is the public Gutenberg source_id (never the internal surrogate).
-//  - Resolves source_id → rr_book.id (internal) only for rr_book_metadata join.
-//  - No longer queries the deprecated book_sentences / book_tokens tables.
-//  - Content now served from published HTML (Supabase Storage bridge → R2 rr-digital-products).
-//  - Free users receive the marketing sample; full interactive edition is premium-gated.
+//  URL param = public Gutenberg source_id
+//  Layout gives the interactive ebook iframe near full viewport height.
 
 import { supabase } from '@/lib/supabaseClient';
 import RocketReader from '@/components/ui/Rocketreader';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import {
+  CONTENT_QUARANTINE_REASON,
+  isQuarantinedSourceId,
+} from '@/lib/contentQuarantine';
 
 export default async function ReadPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; sample?: string }>;
 }) {
   const resolvedParams = await params;
   const resolvedSearch = await searchParams;
 
-  // IMPORTANT: The URL always uses the public Gutenberg source_id.
-  // This matches the convention used by BookCard, BookActions, and all user-facing links.
-  const sourceId = resolvedParams.id; // keep as string for exact match against rr_book.source_id
+  const sourceId = resolvedParams.id;
+  if (isQuarantinedSourceId(sourceId)) {
+    return (
+      <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+        <h1 className="text-2xl font-bold text-white mb-4">Edition unavailable</h1>
+        <p className="text-slate-300 mb-8">{CONTENT_QUARANTINE_REASON}</p>
+        <Link href="/search" className="text-emerald-300 font-bold hover:text-emerald-200">
+          ← Back to Library
+        </Link>
+      </div>
+    );
+  }
   const currentPage = parseInt(resolvedSearch.page || '1', 10);
+  const forceSample =
+    resolvedSearch.sample === 'true' ||
+    resolvedSearch.sample === '1' ||
+    resolvedSearch.sample === '';
 
-  // 1. Resolve public source_id → internal rr_book.id (the duality pattern)
   const { data: rrBook, error: rrBookError } = await supabase
     .from('rr_book')
     .select('id, source_id, title, author')
@@ -42,8 +53,7 @@ export default async function ReadPage({
 
   const internalBookId = rrBook.id;
 
-  // 2. Fetch processing status + stats from the new single source of truth for the website
-  const { data: metaData, error: metaError } = await supabase
+  const { data: metaData } = await supabase
     .from('rr_book_metadata')
     .select(`
       total_words,
@@ -63,45 +73,43 @@ export default async function ReadPage({
     .eq('book_id', internalBookId)
     .single();
 
-  // We intentionally do NOT notFound() here.
-  // Books can exist in rr_book while still being processed or waiting for publisher HTML.
   const isProcessed = !!(metaData?.last_processed && metaData?.has_analysis_file);
 
   const title = rrBook.title || 'Rocket Reader';
   const author = rrBook.author || 'Unknown Author';
 
   return (
-    <main className="min-h-screen flex flex-col">
-
-      <div className="bg-slate-900/90 border-b border-amber-400 px-6 py-3 sticky top-16 z-40">
-        <div className="max-w-6xl mx-auto flex items-center justify-center gap-4 relative">
+    <main className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Compact chrome so the published toolbar has room */}
+      <div className="bg-white border-b px-4 py-2.5 sticky top-0 z-40 shadow-sm shrink-0">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <Link
             href={`/book/${sourceId}`}
-            className="text-emerald-300 hover:text-emerald-200 font-semibold transition flex items-center gap-2 absolute left-0"
+            className="text-slate-500 hover:text-emerald-600 font-semibold transition flex items-center gap-1.5 text-sm shrink-0"
           >
-            <span className="text-lg">←</span> Back to Stats
+            <span className="text-lg leading-none">←</span> Stats
           </Link>
 
-          <div className="text-sm md:text-base font-bold text-white text-center truncate px-28">
+          <div className="text-sm md:text-base font-bold text-slate-800 text-center truncate min-w-0">
             {title}
           </div>
+
+          <div className="w-[52px] shrink-0 hidden sm:block" aria-hidden />
         </div>
       </div>
 
-      <div className="w-full flex-1">
+      <div className="flex-grow w-full max-w-6xl mx-auto px-2 sm:px-4 py-3">
         <RocketReader
-          // Public ID used everywhere the user sees it (URLs, sharing, history)
           sourceId={sourceId}
-          // Internal surrogate (only for rr_* table joins when truly needed)
           internalBookId={internalBookId}
           title={title}
           author={author}
           metadata={metaData || null}
           isProcessed={isProcessed}
           currentPage={currentPage}
+          forceSample={forceSample}
         />
       </div>
-
     </main>
   );
 }

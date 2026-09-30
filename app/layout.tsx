@@ -2,25 +2,33 @@
 //  =============================
 
 import type { Metadata } from 'next';
-import { Fredoka, Nunito } from 'next/font/google';
+import { Fredoka, Nunito, Source_Serif_4 } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
 import NavBar from '@/components/NavBar';
+import ThemeBody from '@/components/ThemeBody';
 
 const nunito = Nunito({
   subsets: ['latin'],
-  weight: ['500', '600', '700', '800'],
   variable: '--font-nunito',
+  weight: ['500', '600', '700', '800'],
 });
+
 const fredoka = Fredoka({
   subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  variable: '--rr-display',
+  variable: '--font-fredoka',
+  weight: ['400', '600', '700'],
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ['latin'],
+  variable: '--font-source-serif',
+  weight: ['400', '600', '700'],
 });
 
 export const metadata: Metadata = {
-  title: 'Rocket Readers',
-  description: 'Find books with the highest sight-word coverage',
+  title: 'Rocket Reader',
+  description: 'Find books with the highest sight-word coverage for young readers',
 };
 
 export default function RootLayout({
@@ -29,13 +37,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${nunito.className} ${nunito.variable} ${fredoka.variable}`}>
+    <html lang="en" className={`${nunito.variable} ${fredoka.variable} ${sourceSerif.variable}`}>
+      <ThemeBody className={nunito.className}>
         <AuthProvider>
           <NavBar />
-          {children}
+          <main className="flex-1">{children}</main>
         </AuthProvider>
-      </body>
+      </ThemeBody>
     </html>
   );
 }

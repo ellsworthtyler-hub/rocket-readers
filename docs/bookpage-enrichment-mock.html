@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BookPage enrichment mock — Rocket Readers</title>
+<style>
+  :root {
+    --bg: #020617;
+    --panel: rgba(30, 41, 59, 0.9);
+    --border: rgba(71, 85, 105, 0.8);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --emerald: #6ee7b7;
+    --link: #6ee7b7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 20% -10%, #1e293b 0%, var(--bg) 55%);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .banner {
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
+    padding: 10px 24px;
+    font-size: 13px;
+    color: #cbd5e1;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .banner strong { color: #fbbf24; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #1e293b;
+    border: 1px solid #475569;
+    font-size: 12px;
+  }
+  .topbar {
+    border-bottom: 1px solid rgba(51,65,85,.8);
+    background: rgba(2,6,23,.7);
+    backdrop-filter: blur(8px);
+    padding: 16px 24px;
+  }
+  .wrap { max-width: 64rem; margin: 0 auto; padding: 32px 24px 80px; }
+  .back { color: #6ee7b7; font-weight: 700; text-decoration: none; }
+  h1 {
+    font-size: 2.25rem;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .author { color: #cbd5e1; font-weight: 600; font-size: 1.125rem; margin: 0 0 16px; }
+  .hero {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 28px;
+    margin-bottom: 28px;
+    align-items: start;
+  }
+  .hero.sparse { grid-template-columns: 1fr; }
+  .cover {
+    width: 140px;
+    aspect-ratio: 2/3;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid #475569;
+    box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    background: #1e293b;
+  }
+  .cover-fallback {
+    width: 140px;
+    aspect-ratio: 2/3;
+    border-radius: 12px;
+    border: 1px dashed #64748b;
+    background: linear-gradient(160deg, #1e293b, #0f172a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 12px;
+    text-align: center;
+    padding: 12px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
+    margin: 0 0 14px;
+    color: #e2e8f0;
+    font-size: 14px;
+  }
+  .stars { color: #fbbf24; letter-spacing: 1px; }
+  .sep { color: #64748b; }
+  .summary {
+    color: #cbd5e1;
+    font-size: 15px;
+    line-height: 1.55;
+    margin: 0 0 16px;
+    max-width: 52rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .links a, .links span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #475569;
+    background: rgba(15,23,42,.7);
+    color: #e2e8f0;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .links a:hover { border-color: #6ee7b7; color: #6ee7b7; }
+  .isbn { font-variant-numeric: tabular-nums; color: #94a3b8; font-weight: 500; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; font-size: 12px; color: #94a3b8;
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .tile {
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,.35);
+    box-shadow: 0 1px 2px rgba(0,0,0,.08);
+  }
+  .tile .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .tile .val { font-size: 1.875rem; font-weight: 700; }
+  .emerald { background: #a7f3d0; } .emerald .label { color: #047857; } .emerald .val { color: #064e3b; }
+  .amber { background: #fde68a; } .amber .label { color: #b45309; } .amber .val { color: #78350f; }
+  .sky { background: #bae6fd; } .sky .label { color: #0369a1; } .sky .val { color: #0c4a6e; }
+  .violet { background: #ddd6fe; } .violet .label { color: #6d28d9; } .violet .val { color: #4c1d95; }
+  .actions {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px;
+  }
+  .btn {
+    border-radius: 12px; padding: 12px 18px; font-weight: 700; font-size: 14px; border: 1px solid transparent;
+  }
+  .btn-primary { background: #10b981; color: #052e1c; }
+  .btn-ghost { background: transparent; color: #cbd5e1; border-color: #475569; }
+  .btn-locked { background: #1e293b; color: #94a3b8; border-color: #475569; }
+  .grid3 {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 32px;
+  }
+  .panel {
+    border-radius: 24px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    box-shadow: 0 10px 24px rgba(0,0,0,.2);
+    margin-bottom: 24px;
+  }
+  .panel h3 { margin: 0 0 16px; font-size: 1.125rem; }
+  .row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 14px; }
+  .row span:first-child { color: #94a3b8; }
+  .row span:last-child { font-weight: 600; color: #f1f5f9; }
+  .section-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin: 0 0 8px; font-weight: 700;
+  }
+  .note {
+    margin-top: 40px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .variant {
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px dashed #334155;
+  }
+  .variant-title {
+    font-size: 13px; font-weight: 700; color: #fbbf24; margin-bottom: 20px; text-transform: uppercase; letter-spacing: .06em;
+  }
+  @media (max-width: 720px) {
+    .hero { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .grid3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="banner">
+    <strong>MOCK — not live</strong>
+    <span>Task #3 · BookPage enrichment display</span>
+    <span class="chip">Sources: Open Library + Google Books (already stored)</span>
+    <span class="chip">Hide empty fields</span>
+    <span class="chip">No Goodreads · No Amazon image cache</span>
+  </div>
+
+  <div class="topbar">
+    <div class="wrap" style="padding:0; max-width:64rem;">
+      <a class="back" href="#">← Back to Library</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="variant-title">A · Full enrichment (fields present)</div>
+
+    <div class="hero">
+      <img class="cover" src="cover-tom.jpg" alt="Cover for The Adventures of Tom Sawyer" />
+      <div>
+        <p class="section-label">About this edition</p>
+        <h1>The Adventures of Tom Sawyer</h1>
+        <p class="author">Twain, Mark, 1835–1910</p>
+
+        <div class="meta-row">
+          <span class="stars">★★★★☆</span>
+          <strong>4.2</strong>
+          <span class="sep">·</span>
+          <span>1,248 ratings</span>
+          <span class="sep">·</span>
+          <span>Popularity 72</span>
+        </div>
+
+        <p class="summary">
+          Tom Sawyer lives with his Aunt Polly and his half-brother Sid in the Mississippi River town of St. Petersburg, Missouri. After playing hooky and getting in a fight, Tom ends up whitewashing a fence as punishment — then invents a scheme to make his friends pay for the privilege of doing his work.
+        </p>
+
+        <div class="links">
+          <span class="isbn">ISBN 978-0-486-40077-8</span>
+          <a href="#">Open Library</a>
+          <a href="#">Google Books</a>
+          <a href="#">Gutenberg #74</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span>💎 Elite (Top 5%)</span>
+      <span>🚀 Incredible (Top 10%)</span>
+      <span>🔥 Great (Top 25%)</span>
+      <span>✅ Above Avg (Top 50%)</span>
+      <span>📈 Fair (Top 75%)</span>
+    </div>
+
+    <div class="metrics">
+      <div class="tile emerald"><div class="label">Dolch Density</div><div class="val">61.4% 🔥</div></div>
+      <div class="tile amber"><div class="label">Fry Density</div><div class="val">78.9% 🚀</div></div>
+      <div class="tile sky"><div class="label">Dialogue</div><div class="val">36.2% ✅</div></div>
+      <div class="tile violet"><div class="label">Flesch Grade</div><div class="val">5.1 💎</div></div>
+    </div>
+
+    <div class="actions">
+      <div class="btn btn-ghost">Gutenberg free ebook</div>
+      <div class="btn btn-primary">Read Free Sample</div>
+      <div class="btn btn-locked">🔒 Full Enhanced Ebook</div>
+      <div class="btn btn-locked">🔒 Classwork Packets</div>
+    </div>
+
+    <div class="grid3">
+      <div>
+        <div class="panel">
+          <h3>Text Composition</h3>
+          <div class="row"><span>Total Words</span><span>71,248</span></div>
+          <div class="row"><span>Total Sentences</span><span>4,102</span></div>
+          <div class="row"><span>Unique Vocabulary</span><span>6,841</span></div>
+          <div class="row"><span>Words / Sentence</span><span>17.4</span></div>
+          <div class="row"><span>Lexical Richness</span><span>9.6%</span></div>
+        </div>
+        <div class="panel">
+          <h3>Dolch Completion</h3>
+          <div class="row"><span>Pre-K</span><span>91%</span></div>
+          <div class="row"><span>Kindergarten</span><span>88%</span></div>
+          <div class="row"><span>1st Grade</span><span>84%</span></div>
+          <div class="row"><span>2nd Grade</span><span>76%</span></div>
+          <div class="row"><span>3rd Grade</span><span>71%</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3>Grammatical Breakdown (POS)</h3>
+          <div style="height:12px;border-radius:999px;overflow:hidden;display:flex;margin-bottom:14px;">
+            <div style="width:28%;background:#6366f1"></div>
+            <div style="width:32%;background:#f43f5e"></div>
+            <div style="width:12%;background:#f59e0b"></div>
+            <div style="width:11%;background:#0ea5e9"></div>
+            <div style="width:17%;background:#10b981"></div>
+          </div>
+          <div style="color:#cbd5e1;font-size:13px;">Nouns · Verbs · Adjectives · Adverbs · Prepositions</div>
+        </div>
+        <div class="panel">
+          <h3>Word Length Distribution</h3>
+          <div style="height:120px;display:flex;align-items:flex-end;gap:8px;">
+            <div style="flex:1;background:#a78bfa;height:90%;border-radius:4px 4px 0 0"></div>
+            <div style="flex:1;background:#a78bfa;height:100%;border-radius:4px 4px 0 0"></div>
+            <div style="flex:1;background:#a78bfa;height:70%;border-radius:4px 4px 0 0"></div>
+            <div style="flex:1;background:#a78bfa;height:45%;border-radius:4px 4px 0 0"></div>
+            <div style="flex:1;background:#a78bfa;height:28%;border-radius:4px 4px 0 0"></div>
+            <div style="flex:1;background:#a78bfa;height:18%;border-radius:4px 4px 0 0"></div>
+            <div style="flex:1;background:#a78bfa;height:10%;border-radius:4px 4px 0 0"></div>
+            <div style="flex:1;background:#a78bfa;height:6%;border-radius:4px 4px 0 0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant">
+      <div class="variant-title">B · Sparse enrichment (missing fields hidden — no clutter)</div>
+      <div class="hero sparse">
+        <div>
+          <h1>Over the Side · Captains All, Book 6.</h1>
+          <p class="author">Jacobs, W. W. (William Wymark Jacobs), 1863–1943</p>
+          <div class="links">
+            <a href="#">Gutenberg #11186</a>
+          </div>
+          <p style="color:#64748b;font-size:13px;margin:14px 0 0;">No cover, summary, rating, ISBN, or catalog links stored yet — hero collapses to title + Gutenberg only.</p>
+        </div>
+      </div>
+      <div class="metrics" style="margin-top:20px;">
+        <div class="tile emerald"><div class="label">Dolch Density</div><div class="val">64.2%</div></div>
+        <div class="tile amber"><div class="label">Fry Density</div><div class="val">81.0%</div></div>
+        <div class="tile sky"><div class="label">Dialogue</div><div class="val">41.5%</div></div>
+        <div class="tile violet"><div class="label">Flesch Grade</div><div class="val">4.8</div></div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong style="color:#e2e8f0;">Layout rules for implementation</strong><br/>
+      1. Enrichment sits in the hero (cover left, text right) above existing literacy metric tiles — analysis panels stay untouched.<br/>
+      2. Render each block only when data exists: <code>cover_url</code>, <code>short_description</code>, <code>average_rating</code>/<code>ratings_count</code>/<code>popularity_score</code>, <code>isbn</code>, <code>external_ids.openlibrary</code> / <code>external_ids.google_books</code>. Gutenberg link already exists via source_id.<br/>
+      3. Prefer Open Library cover URL already stored; Google Books thumbnail only as already-merged fallback. Do not add Goodreads or durable Amazon image caching.<br/>
+      4. Clamp summary to ~3 lines; rating row is a single quiet meta line, not a card.<br/>
+      5. Sample numbers above are illustrative for review. Live wiring binds to <code>rr_book</code> / <code>rr_book_enrichment</code> from <code>rr_enricher.py</code>.
+    </div>
+  </div>
+</body>
+</html>

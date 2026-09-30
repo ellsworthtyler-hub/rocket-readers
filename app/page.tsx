@@ -1,138 +1,133 @@
 //  FILE: app/page.tsx
-//  ========================
+//  Homepage — Cosmic theme
 
 import Link from 'next/link';
 import { BookCard } from '../components/BookCard';
-import { loadBooks, getGlobalStats } from '@/lib/data';
-import { BadgeLegend } from "@/components/BadgeLegend";
+import { BadgeLegend } from '@/components/BadgeLegend';
+import {
+  getGlobalStats,
+  getLibraryPercentiles,
+  listProcessedBooks,
+} from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  // Use the centralized new-schema helpers (rr_book_metadata + rr_book)
-  const allBooks = await loadBooks(20);
-
-  // For the "Hot off the Launchpad" section, show the strongest Dolch books first
-  const hotBooks = [...allBooks]
-    .sort((a, b) => parseFloat(b.dolch) - parseFloat(a.dolch))
-    .slice(0, 6);
-
-  const stats = await getGlobalStats();
-  const totalBooks = stats.totalBooks;
-  const avgDolch = stats.avgDolch;
-  const avgFry = stats.avgFry;
-
-  // --- Dynamic percentiles for badges (still from legacy table for now; BookCard has fallbacks) ---
-  // We intentionally keep this query separate so the home page doesn't break if library_percentiles is empty.
-  let libraryStats: any = null;
-  try {
-    const { supabase } = await import('@/lib/supabaseClient');
-    const { data } = await supabase
-      .from('library_percentiles')
-      .select('*')
-      .single();
-    libraryStats = data;
-  } catch (e) {
-    // Silent — BookCard already handles missing libraryStats with static badge logic
-  }
-  // -------------------------------------------------------------------------------------------
+  const [{ books: hotBooks }, stats, libraryStats] = await Promise.all([
+    listProcessedBooks({ page: 1, pageSize: 6, sortBy: 'dolch_percentage' }),
+    getGlobalStats(),
+    getLibraryPercentiles(),
+  ]);
 
   return (
-    <div className="min-h-screen">
-      <div className="py-16 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="text-6xl mb-3" aria-hidden>🚀📚✨</div>
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight bg-gradient-to-r from-amber-200 via-emerald-300 to-sky-300 bg-clip-text text-transparent">
-            Rocket Readers
-          </h1>
-          <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed font-semibold">
-            Find books with the highest sight-word coverage for your readers.
+    <div className="pb-16">
+      {/* Hero */}
+      <header className="text-center px-6 pt-12 md:pt-16 pb-6 max-w-4xl mx-auto">
+        <div className="text-5xl md:text-6xl mb-3 drop-shadow-lg" aria-hidden>
+          🚀📚✨
+        </div>
+        <h1 className="cosmic-title text-5xl md:text-6xl mb-4">Rocket Reader</h1>
+        <p className="text-lg md:text-xl text-slate-300 font-bold max-w-xl mx-auto mb-8">
+          Find books with the highest sight-word coverage for your readers.
+        </p>
+        <Link href="/search" className="btn-chunky text-lg">
+          Browse the Full Library →
+        </Link>
+      </header>
+
+      {/* Selling points */}
+      <section className="px-6 py-8">
+        <div className="cosmic-panel max-w-3xl mx-auto space-y-4 text-base md:text-lg">
+          <p>
+            Rocket Readers turns classic public-domain books into powerful literacy tools by
+            analyzing every text for the exact building blocks young readers and English learners
+            need most. Our engine measures Dolch and Fry sight-word coverage, dialogue ratio,
+            word-length patterns, readability scores, and part-of-speech balance—then delivers
+            clear progress reports plus ready-to-use classroom packets packed with vocabulary
+            sheets, flashcards, memory games, spelling and sentence scramblers, word searches, and
+            more—all drawn directly from the book itself.
           </p>
+          <p>
+            Parents and teachers finally get transparent data on how &ldquo;sight-word dense&rdquo; a
+            story really is, plus engaging, book-specific practice that builds automatic
+            recognition, fluency, and confidence. Whether you are supporting a beginning reader, an
+            ESL student, or a whole classroom, Rocket Readers makes high-quality, research-aligned
+            materials free and instantly usable so every child can experience the joy of successful
+            reading.{' '}
+            <Link href="/about">Learn more about our approach →</Link>
+          </p>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
+            🔥 Hot off the Launchpad
+          </h2>
           <Link
             href="/search"
-            className="inline-block bg-gradient-to-br from-emerald-500 to-emerald-700 text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-[0_7px_0_#065f46] hover:translate-y-0.5 hover:shadow-[0_4px_0_#065f46] transition-all"
+            className="text-emerald-300 font-extrabold hover:text-emerald-200 transition"
           >
-            Browse the Full Library →
-          </Link>
-          <div className="max-w-3xl mx-auto mt-10 text-left rounded-3xl border-[3px] border-indigo-400 bg-slate-900/80 px-6 py-6 text-slate-200 leading-relaxed shadow-[0_0_0_6px_rgba(129,140,248,0.12)]">
-            <p className="mb-4">
-              Rocket Readers turns classic public-domain books into powerful literacy tools by analyzing every text for the exact building blocks young readers and English learners need most. Our engine measures Dolch and Fry sight-word coverage, dialogue ratio, word-length patterns, readability scores, and part-of-speech balance—then delivers clear progress reports plus ready-to-use classroom packets packed with vocabulary sheets, flashcards, memory games, spelling and sentence scramblers, word searches, and more—all drawn directly from the book itself.
-            </p>
-            <p>
-              Parents and teachers finally get transparent data on how “sight-word dense” a story really is, plus engaging, book-specific practice that builds automatic recognition, fluency, and confidence. Whether you are supporting a beginning reader, an ESL student, or a whole classroom, Rocket Readers makes high-quality, research-aligned materials free and instantly usable so every child can experience the joy of successful reading.{" "}
-              <Link href="/about" className="text-amber-200 font-extrabold hover:underline">Learn more about our approach →</Link>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold text-white">🔥 Hot off the Launchpad</h2>
-          <Link href="/search" className="text-emerald-300 font-bold hover:underline">
             See all books →
           </Link>
         </div>
-        
-        {/* NEW: Drop the Legend right above the grid */}
+
         <BadgeLegend />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {hotBooks.map((book) => (
-            <BookCard 
-              key={book.id} 
-              {...book} 
-              libraryStats={libraryStats} // NEW: Pass the stats down!
-            />
+            <BookCard key={book.id} {...book} libraryStats={libraryStats} />
           ))}
+          {hotBooks.length === 0 && (
+            <p className="col-span-full text-center text-slate-400 py-12 font-semibold">
+              Processed books will appear here as the library pipeline completes.
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Global Stats Banner */}
-      <div className="max-w-5xl mx-auto px-6 mt-12">
-        <div className="rounded-3xl border-4 border-amber-200 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 py-12 text-white">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+      <div className="max-w-5xl mx-auto px-6 mt-4">
+        <div className="cosmic-banner">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
             <div>
-              <div className="text-5xl font-bold mb-2">
-                {(totalBooks || 0).toLocaleString()}
+              <div className="font-display text-4xl md:text-5xl font-bold mb-1">
+                {stats.totalBooks.toLocaleString()}
               </div>
-              <div className="font-semibold">Books Analyzed</div>
+              <div className="font-semibold opacity-90">Books Analyzed</div>
             </div>
             <div>
-              <div className="text-5xl font-bold mb-2">{avgDolch}%</div>
-              <div className="font-semibold">Average Dolch Density</div>
+              <div className="font-display text-4xl md:text-5xl font-bold mb-1">
+                {stats.avgDolch}%
+              </div>
+              <div className="font-semibold opacity-90">Average Dolch Density</div>
             </div>
             <div>
-              <div className="text-5xl font-bold mb-2">{avgFry}%</div>
-              <div className="font-semibold">Average Fry Density</div>
+              <div className="font-display text-4xl md:text-5xl font-bold mb-1 text-amber-200">
+                {stats.avgFry}%
+              </div>
+              <div className="font-semibold opacity-90">Average Fry Density</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Footer Teaser */}
-      <div className="max-w-5xl mx-auto px-6 py-20 text-center">
-        <h3 className="text-2xl font-bold text-white mb-4">Ready to accelerate reading comprehension?</h3>
-        <p className="text-slate-300 mb-8 max-w-2xl mx-auto text-lg">
-          Teachers, homeschoolers, and ESL instructors love Rocket Readers because it shows exactly which books will help their students succeed.
+      <div className="max-w-5xl mx-auto px-6 py-16 text-center">
+        <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-4">
+          Ready to accelerate reading comprehension?
+        </h3>
+        <p className="text-slate-300 mb-8 max-w-2xl mx-auto text-lg font-semibold">
+          Teachers, homeschoolers, and ESL instructors use Rocket Reader to choose texts that match
+          their students&apos; sight-word readiness—and to practice those words in context.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/search"
-            className="inline-flex items-center gap-3 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold px-8 py-4 rounded-2xl shadow-[0_7px_0_#312e81] hover:translate-y-0.5 transition"
-          >
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link href="/search" className="btn-chunky">
             Explore the Archive
           </Link>
-          <Link
-            href="/about"
-            className="inline-flex items-center gap-3 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white font-bold px-8 py-4 rounded-2xl shadow-[0_7px_0_#065f46] hover:translate-y-0.5 transition"
-          >
+          <Link href="/about" className="btn-chunky-secondary">
             About Us
           </Link>
         </div>
       </div>
-      
     </div>
   );
 }

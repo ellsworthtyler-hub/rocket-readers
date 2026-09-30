@@ -38,16 +38,18 @@ export default function BookFeedback({ bookId }: { bookId: string | number }) {
   };
 
   return (
-    <div className="flex flex-wrap justify-center gap-8 mt-6 pt-6 border-t border-slate-200 text-sm font-medium text-slate-400">
-      <button 
+    <div className="flex flex-wrap justify-center gap-8 mt-6 pt-6 border-t border-slate-600 text-sm font-medium text-slate-400">
+      <button
+        type="button"
         onClick={() => submitFeedback('recommend')}
-        className="hover:text-amber-500 transition flex items-center gap-2"
+        className="hover:text-amber-300 transition flex items-center gap-2"
       >
         <span className="text-lg">⭐</span> Recommend Book
       </button>
-      <button 
+      <button
+        type="button"
         onClick={() => submitFeedback('flag_content')}
-        className="hover:text-rose-500 transition flex items-center gap-2"
+        className="hover:text-rose-300 transition flex items-center gap-2"
       >
         <span className="text-lg">🚩</span> Flag Content
       </button>
