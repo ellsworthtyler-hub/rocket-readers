@@ -7,6 +7,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { BookCard } from '@/components/BookCard';
 import { supabase } from '@/lib/supabaseClient';
 import { BadgeLegend } from '@/components/BadgeLegend';
+import { isQuarantinedSourceId } from '@/lib/contentQuarantine';
 
 interface Book {
   id: string;
@@ -72,7 +73,7 @@ export default function LeaderboardPage() {
           fleschGrade: b.flesch_grade?.toString() || '0',
           dialogRatio: b.dialog_percentage?.toString() || '0',
         };
-      });
+      }).filter((bk) => !isQuarantinedSourceId(bk.id));
 
       setBooks(formatted);
       setLoading(false);

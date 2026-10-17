@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams } from 'next/navigation';
 import { BadgeLegend } from '@/components/BadgeLegend';
 import { RR_PARENT_THEMES, resolveThemeFilter } from '@/lib/themes';
+import { isQuarantinedSourceId } from '@/lib/contentQuarantine';
 
 interface Book {
   id: string;
@@ -180,10 +181,10 @@ function SearchContent() {
           fleschGrade: b.flesch_grade?.toString() || '0',
           dialogRatio: b.dialog_percentage?.toString() || '0',
         };
-      });
+      }).filter((bk) => !isQuarantinedSourceId(bk.id));
 
       setBooks(formatted);
-      setTotalBooks(count || 0);
+      setTotalBooks(Math.max(0, (count || 0) - ((data || []).length - formatted.length)));
       setLoading(false);
     };
 
