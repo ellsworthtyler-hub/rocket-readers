@@ -209,6 +209,8 @@ export async function resolveRrBookBySourceId(sourceId: string) {
 export async function getBookMetadataForSourceId(
   sourceId: string
 ): Promise<BookDetailMeta | null> {
+  // Quarantined editions are hidden everywhere (book page 404s via notFound()).
+  if (isQuarantinedSourceId(sourceId)) return null;
   const book = await resolveRrBookBySourceId(sourceId);
   if (!book) return null;
 

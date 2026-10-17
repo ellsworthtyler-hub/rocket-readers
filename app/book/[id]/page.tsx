@@ -4,7 +4,8 @@
 
 import BookActions from '@/components/ui/BookActions';
 import BookEnrichmentHero from '@/components/BookEnrichmentHero';
-import { CONTENT_QUARANTINE_REASON } from '@/lib/contentQuarantine';
+import { CONTENT_QUARANTINE_REASON, isQuarantinedSourceId } from '@/lib/contentQuarantine';
+import type { Metadata } from 'next';
 import BookFeedback from '@/components/ui/BookFeedback';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -62,6 +63,15 @@ const panelTitle = 'text-lg font-bold text-slate-50 mb-4';
 const rowLabel = 'text-slate-400';
 const rowValue = 'font-semibold text-slate-100';
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  return isQuarantinedSourceId(id) ? { robots: { index: false, follow: false } } : {};
+}
+
 export default async function BookPage({
   params,
 }: {
@@ -70,7 +80,7 @@ export default async function BookPage({
   const resolvedParams = await params;
   const sourceId = resolvedParams.id;
 
-  if (!/^\d{1,10}$/.test(sourceId)) {
+  if (!/^\d{1,10}$/.test(sourceId) || isQuarantinedSourceId(sourceId)) {
     notFound();
   }
 
