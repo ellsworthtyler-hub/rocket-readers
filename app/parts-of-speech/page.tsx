@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { isQuarantinedSourceId } from "@/lib/contentQuarantine";
 
 const PAGE_SIZE = 40;
 
@@ -165,10 +166,11 @@ export default function PartsOfSpeechPage() {
           setTotal(0);
           setHasMore(false);
         } else {
-          const rows = (data || []).map((row) => mapRow(row as PosRow));
+          const raw = data || [];
+          const rows = raw.map((row) => mapRow(row as PosRow)).filter((b) => !isQuarantinedSourceId(b.sourceId));
           setBooks(rows);
-          setTotal(count || 0);
-          setHasMore(rows.length === PAGE_SIZE);
+          setTotal(Math.max(0, (count || 0) - (raw.length - rows.length)));
+          setHasMore(raw.length === PAGE_SIZE);
         }
       } catch (err) {
         if (gen !== requestGen.current) return;
@@ -205,9 +207,10 @@ export default function PartsOfSpeechPage() {
           setHasMore(false);
           return;
         }
-        const rows = (data || []).map((row) => mapRow(row as PosRow));
+        const raw = data || [];
+        const rows = raw.map((row) => mapRow(row as PosRow)).filter((b) => !isQuarantinedSourceId(b.sourceId));
         setBooks((prev) => [...prev, ...rows]);
-        setHasMore(rows.length === PAGE_SIZE);
+        setHasMore(raw.length === PAGE_SIZE);
       } catch (err) {
         if (gen !== requestGen.current) return;
         setError(err instanceof Error ? err.message : "Search failed");
@@ -303,7 +306,7 @@ export default function PartsOfSpeechPage() {
           })}
         </div>
         <p className="mt-4 text-sm text-slate-400">
-          Highest share first. Select the same part again to flip the order. The number beside each bar is that book&apos;s share of {activePart.label.toLowerCase()}.
+          Highest share first. Select the same part again to flip the order. The number beside each bar is that book's share of {activePart.label.toLowerCase()}.
         </p>
       </div>
 
