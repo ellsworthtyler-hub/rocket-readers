@@ -306,7 +306,7 @@ export default function PartsOfSpeechPage() {
           })}
         </div>
         <p className="mt-4 text-sm text-slate-400">
-          Highest share first. Select the same part again to flip the order. The number beside each bar is that book's share of {activePart.label.toLowerCase()}.
+          Highest share first. Select the same part again to flip the order. The number beside each bar is that book{"'"}s share of {activePart.label.toLowerCase()}.
         </p>
       </div>
 
