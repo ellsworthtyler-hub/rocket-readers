@@ -3,6 +3,7 @@
 //  Cosmic-theme book dashboard
 
 import BookActions from '@/components/ui/BookActions';
+import { hasClassworkPacket } from '@/lib/packets';
 import BookEnrichmentHero from '@/components/BookEnrichmentHero';
 import { CONTENT_QUARANTINE_REASON, isQuarantinedSourceId } from '@/lib/contentQuarantine';
 import type { Metadata } from 'next';
@@ -182,7 +183,7 @@ export default async function BookPage({
               {dolchNum.toFixed(1)}% {getDynamicEmoticon(dolchNum, thresholds.dolch)}
             </div>
             <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">
-              Top 10% is &ge; {thresholds.dolch.p90.toFixed(1)}%
+              Top 10% is ≥ {thresholds.dolch.p90.toFixed(1)}%
             </div>
           </div>
 
@@ -194,7 +195,7 @@ export default async function BookPage({
               {fryNum.toFixed(1)}% {getDynamicEmoticon(fryNum, thresholds.fry)}
             </div>
             <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">
-              Top 10% is &ge; {thresholds.fry.p90.toFixed(1)}%
+              Top 10% is ≥ {thresholds.fry.p90.toFixed(1)}%
             </div>
           </div>
 
@@ -204,7 +205,7 @@ export default async function BookPage({
               {dialogNum.toFixed(1)}% {getDynamicEmoticon(dialogNum, thresholds.dialog)}
             </div>
             <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">
-              Top 10% is &ge; {thresholds.dialog.p90.toFixed(1)}%
+              Top 10% is ≥ {thresholds.dialog.p90.toFixed(1)}%
             </div>
           </div>
 
@@ -230,6 +231,7 @@ export default async function BookPage({
           bookId={meta.sourceId}
           gutenbergId={meta.sourceId}
           contentQuarantined={!!meta.content_quarantined}
+          hasPacket={meta.content_quarantined ? false : await hasClassworkPacket(meta.sourceId)}
         />
 
         {!meta.last_processed && (

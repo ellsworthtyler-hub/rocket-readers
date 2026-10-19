@@ -17,7 +17,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Choose Premium or Teacher.' }, { status: 400 });
     }
 
-    const priceId = priceIdForPlan(plan);
+    const interval = plan === 'premium' && body?.interval === 'year' ? 'year' : 'month';
+    const priceId = priceIdForPlan(plan, interval);
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('stripe_customer_id, stripe_subscription_id, plan, subscription_status')

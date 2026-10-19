@@ -6,6 +6,7 @@ import { Fredoka, Nunito, Source_Serif_4 } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
 import NavBar from '@/components/NavBar';
+import SiteFooter from '@/components/SiteFooter';
 import ThemeBody from '@/components/ThemeBody';
 
 const nunito = Nunito({
@@ -27,7 +28,7 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: 'Rocket Reader',
+  title: 'Rocket Readers',
   description: 'Find books with the highest sight-word coverage for young readers',
 };
 
@@ -42,6 +43,7 @@ export default function RootLayout({
         <AuthProvider>
           <NavBar />
           <main className="flex-1">{children}</main>
+          <SiteFooter />
         </AuthProvider>
       </ThemeBody>
     </html>
