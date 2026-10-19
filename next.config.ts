@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
       tailwindcss: path.join(appRoot, "node_modules", "tailwindcss"),
     },
   },
+  async redirects() {
+    return [{ source: "/library", destination: "/search", permanent: true }];
+  },
 };
 
 export default nextConfig;
