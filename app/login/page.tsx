@@ -37,7 +37,7 @@ export default function LoginPage() {
         <div className="mb-8">
           <div className="text-4xl mb-4">🚀</div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h1>
-          <p className="text-slate-500">Sign in to access your Rocket Reader dashboard and library.</p>
+          <p className="text-slate-500">Sign in to access your Rocket Readers dashboard and library.</p>
         </div>
 
         <div className="space-y-4">
@@ -85,7 +85,7 @@ export default function LoginPage() {
           Students, <Link href="/students" className="text-emerald-700 underline">enter your class code</Link> instead.
         </p>
         <p className="mt-4 text-xs text-slate-400">
-          By signing in, you agree to our Terms of Service and Privacy Policy.
+          By signing in, you agree to our <Link href="/terms" className="underline">Terms of Service</Link> and <Link href="/privacy" className="underline">Privacy Policy</Link>.
         </p>
       </div>
     </div>

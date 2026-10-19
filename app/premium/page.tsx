@@ -5,10 +5,13 @@ import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import { Suspense, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
-import type { PaidPlan } from '@/lib/plans';
+import type { BillingInterval, PaidPlan } from '@/lib/plans';
+
+// Teacher checkout turns on once this public price id is set in Vercel.
+const TEACHER_ENABLED = !!process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER;
 
 const sharedFeatures = [
-  'Enhanced Rocket Reader editions',
+  'Enhanced Rocket Readers editions',
   'Sight-word and parts-of-speech highlights',
   'Charts and word-length reports',
   'Classwork packets',
@@ -20,12 +23,12 @@ function PremiumPageContent() {
   const searchParams = useSearchParams();
   const canceled = searchParams.get('canceled');
   const [error, setError] = useState<string | null>(null);
-  const [busyPlan, setBusyPlan] = useState<PaidPlan | null>(null);
+  const [busyPlan, setBusyPlan] = useState<string | null>(null);
 
-  const handleSubscribe = async (plan: PaidPlan) => {
+  const handleSubscribe = async (plan: PaidPlan, interval: BillingInterval = 'month') => {
     setError(null);
     if (!user) return;
-    setBusyPlan(plan);
+    setBusyPlan(`${plan}-${interval}`);
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -39,7 +42,7 @@ function PremiumPageContent() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, interval }),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -72,7 +75,7 @@ function PremiumPageContent() {
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Choose a Rocket Readers plan</h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Free keeps the library and the stats. Premium and Teacher open the same enhanced books and classwork packets.
+            Free keeps the library and the stats. Individual / Family and Teacher plans open the same enhanced books.
           </p>
         </div>
 
@@ -103,42 +106,63 @@ function PremiumPageContent() {
           />
 
           <PlanCard
-            name="Premium"
+            name="Individual / Family"
             audience="Parents and homeschoolers"
-            price="$5"
-            period="/month"
+            price="$4.99"
+            period="/month or $49.99/year"
             note="One class code, meant for up to 6 students. We do not count or block extra students."
             highlighted
             features={['Everything in Free', ...sharedFeatures]}
             action={
-              <PlanButton
-                plan="premium"
-                current={adultPlan}
-                signedIn={!!user}
-                busy={busyPlan === 'premium'}
-                highlighted
-                hasBilling={hasBilling}
-                onSubscribe={handleSubscribe}
-              />
+              <div className="space-y-3">
+                <PlanButton
+                  plan="premium"
+                  current={adultPlan}
+                  signedIn={!!user}
+                  busy={busyPlan === 'premium-month'}
+                  highlighted
+                  hasBilling={hasBilling}
+                  onSubscribe={(p) => handleSubscribe(p, 'month')}
+                  labelSuffix=" — $4.99/mo"
+                />
+                {user && adultPlan !== 'premium' && (
+                  <PlanButton
+                    plan="premium"
+                    current={adultPlan}
+                    signedIn={!!user}
+                    busy={busyPlan === 'premium-year'}
+                    highlighted
+                    hasBilling={hasBilling}
+                    onSubscribe={(p) => handleSubscribe(p, 'year')}
+                    labelSuffix=" — $49.99/yr"
+                  />
+                )}
+              </div>
             }
           />
 
           <PlanCard
             name="Teacher"
             audience="Public school classrooms"
-            price="$25"
+            price="$24.99"
             period="/month"
-            note="One class code, meant for up to 30 students. We do not count or block extra students."
-            features={['Everything in Premium', 'The same books and packets, sized for a class']}
+            note="Same content plus a student class code, meant for up to 30 students. We do not count or block extra students."
+            features={['Everything in Individual / Family', 'The same books, sized for a class']}
             action={
-              <PlanButton
-                plan="teacher"
-                current={adultPlan}
-                signedIn={!!user}
-                busy={busyPlan === 'teacher'}
-                hasBilling={hasBilling}
-                onSubscribe={handleSubscribe}
-              />
+              TEACHER_ENABLED ? (
+                <PlanButton
+                  plan="teacher"
+                  current={adultPlan}
+                  signedIn={!!user}
+                  busy={busyPlan === 'teacher-month'}
+                  hasBilling={hasBilling}
+                  onSubscribe={(p) => handleSubscribe(p, 'month')}
+                />
+              ) : (
+                <button type="button" disabled className="block text-center w-full py-4 bg-slate-200 text-slate-500 rounded-3xl font-semibold cursor-not-allowed">
+                  Coming soon
+                </button>
+              )
             }
           />
         </div>
@@ -196,7 +220,9 @@ function PlanButton({
   highlighted = false,
   hasBilling,
   onSubscribe,
+  labelSuffix = '',
 }: {
+  labelSuffix?: string;
   plan: PaidPlan;
   current: string | null;
   signedIn: boolean;
@@ -236,8 +262,8 @@ function PlanButton({
   }
 
   const label = current === 'premium' || current === 'teacher'
-    ? `Switch to ${plan === 'teacher' ? 'Teacher' : 'Premium'}`
-    : `Subscribe ${plan === 'teacher' ? 'Teacher' : 'Premium'}`;
+    ? `Switch to ${plan === 'teacher' ? 'Teacher' : 'Individual / Family'}`
+    : `Subscribe${labelSuffix || (plan === 'teacher' ? ' Teacher' : '')}`;
 
   return (
     <button type="button" onClick={() => onSubscribe(plan)} disabled={busy} className={`${solid} disabled:opacity-60`}>

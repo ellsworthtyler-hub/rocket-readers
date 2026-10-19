@@ -75,7 +75,7 @@ export default async function ReadPage({
 
   const isProcessed = !!(metaData?.last_processed && metaData?.has_analysis_file);
 
-  const title = rrBook.title || 'Rocket Reader';
+  const title = rrBook.title || 'Rocket Readers';
   const author = rrBook.author || 'Unknown Author';
 
   return (
