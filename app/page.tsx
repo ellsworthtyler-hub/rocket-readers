@@ -7,14 +7,15 @@ import { BadgeLegend } from '@/components/BadgeLegend';
 import {
   getGlobalStats,
   getLibraryPercentiles,
-  listProcessedBooks,
+  listBooksBySourceIds,
 } from '@/lib/data';
+import { FEATURED_SOURCE_IDS } from '@/lib/featured';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const [{ books: hotBooks }, stats, libraryStats] = await Promise.all([
-    listProcessedBooks({ page: 1, pageSize: 6, sortBy: 'dolch_percentage' }),
+    listBooksBySourceIds(FEATURED_SOURCE_IDS),
     getGlobalStats(),
     getLibraryPercentiles(),
   ]);
@@ -26,7 +27,7 @@ export default async function HomePage() {
         <div className="text-5xl md:text-6xl mb-3 drop-shadow-lg" aria-hidden>
           🚀📚✨
         </div>
-        <h1 className="cosmic-title text-5xl md:text-6xl mb-4">Rocket Reader</h1>
+        <h1 className="cosmic-title text-5xl md:text-6xl mb-4">Rocket Readers</h1>
         <p className="text-lg md:text-xl text-slate-300 font-bold max-w-xl mx-auto mb-8">
           Find books with the highest sight-word coverage for your readers.
         </p>
@@ -48,11 +49,11 @@ export default async function HomePage() {
             more—all drawn directly from the book itself.
           </p>
           <p>
-            Parents and teachers finally get transparent data on how &ldquo;sight-word dense&rdquo; a
+            Parents and teachers finally get transparent data on how “sight-word dense” a
             story really is, plus engaging, book-specific practice that builds automatic
             recognition, fluency, and confidence. Whether you are supporting a beginning reader, an
             ESL student, or a whole classroom, Rocket Readers makes high-quality, research-aligned
-            materials free and instantly usable so every child can experience the joy of successful
+            materials instantly usable so every child can experience the joy of successful
             reading.{' '}
             <Link href="/about">Learn more about our approach →</Link>
           </p>
@@ -116,8 +117,8 @@ export default async function HomePage() {
           Ready to accelerate reading comprehension?
         </h3>
         <p className="text-slate-300 mb-8 max-w-2xl mx-auto text-lg font-semibold">
-          Teachers, homeschoolers, and ESL instructors use Rocket Reader to choose texts that match
-          their students&apos; sight-word readiness—and to practice those words in context.
+          Teachers, homeschoolers, and ESL instructors use Rocket Readers to choose texts that match
+          their students{"'"} sight-word readiness—and to practice those words in context.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/search" className="btn-chunky">

@@ -198,7 +198,7 @@ export default function RocketReader({
     return (
       <div className="flex flex-col items-center justify-center p-16 md:p-24 text-center bg-white rounded-3xl border border-slate-200 min-h-[60vh]">
         <div className="animate-pulse text-lg font-semibold tracking-[3px] uppercase text-emerald-600 mb-3">
-          Preparing your Rocket Reader edition
+          Preparing your Rocket Readers edition
         </div>
         <p className="text-slate-500 max-w-sm">
           Loading the enhanced interactive text with Heart words, syllable highlighting, and grammar overlays...
@@ -213,7 +213,7 @@ export default function RocketReader({
         <div className="text-6xl mb-6">🔒</div>
         <h2 className="text-3xl font-bold text-slate-900 mb-4">Premium Edition</h2>
         <p className="text-slate-600 mb-8 max-w-lg mx-auto leading-relaxed">
-          The full interactive Rocket Reader edition of <strong>{title}</strong> is available
+          The full interactive Rocket Readers edition of <strong>{title}</strong> is available
           with a Premium membership.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -242,7 +242,7 @@ export default function RocketReader({
 
         <p className="text-slate-600 mb-8 max-w-lg mx-auto leading-relaxed">
           We are currently running a large-scale reprocessing pass across the Gutenberg collection.
-          The full interactive Rocket Reader edition for <strong>{title}</strong> will be available soon.
+          The full interactive Rocket Readers edition for <strong>{title}</strong> will be available soon.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -287,7 +287,7 @@ export default function RocketReader({
 
       {isPremium && variant === 'full' && (
         <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2 text-center text-xs font-bold tracking-widest text-emerald-700 shrink-0">
-          ROCKET READER PREMIUM — FULL INTERACTIVE EDITION
+          ROCKET READERS PREMIUM — FULL INTERACTIVE EDITION
         </div>
       )}
 
@@ -303,7 +303,7 @@ export default function RocketReader({
       {iframeSrc && (
         <iframe
           ref={iframeRef}
-          title={`${title} — Rocket Reader ${variant}`}
+          title={`${title} — Rocket Readers ${variant}`}
           src={iframeSrc}
           // No sandbox: published HTML needs inline onclick handlers, its own
           // <script> (toggleFeature / changeTextSize), and the Tailwind CDN.

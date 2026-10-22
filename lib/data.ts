@@ -352,6 +352,24 @@ export async function listProcessedBooks(opts: ListBooksParams = {}) {
   };
 }
 
+/** Cards for a fixed list of Gutenberg source_ids, in list order (quarantined ids skipped). */
+export async function listBooksBySourceIds(sourceIds: string[]): Promise<{ books: BookCardData[] }> {
+  const ids = sourceIds.filter((id) => !isQuarantinedSourceId(id));
+  if (ids.length === 0) return { books: [] };
+  const { data, error } = await supabase
+    .from('rr_book_metadata')
+    .select(LIST_SELECT)
+    .not('last_processed', 'is', null)
+    .eq('rr_book.source', 'gutenberg')
+    .in('rr_book.source_id', ids);
+  if (error) {
+    console.error('listBooksBySourceIds:', error);
+    return { books: [] };
+  }
+  const byId = new Map((data || []).map(mapBookCard).map((b) => [b.id, b]));
+  return { books: ids.map((id) => byId.get(id)).filter((b): b is BookCardData => !!b) };
+}
+
 export async function loadBooks(limit = 100): Promise<BookCardData[]> {
   const { books } = await listProcessedBooks({ page: 1, pageSize: limit });
   return books;

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About Us — Rocket Reader',
+  title: 'About Us — Rocket Readers',
   description:
     'Our mission to help young readers and English learners with research-aligned sight words, Heart words, syllable practice, and book-specific classroom packets.',
 };
@@ -33,7 +33,7 @@ export default function AboutPage() {
 
           <p>
             The need has never been greater. According to the most recent National Assessment of
-            Educational Progress (NAEP, often called the Nation&apos;s Report Card), only about 31
+            Educational Progress (NAEP, often called the Nation{"'"}s Report Card), only about 31
             percent of U.S. fourth-graders and 30 percent of eighth-graders scored at or above the
             Proficient level in reading in 2024. Roughly 40 percent of fourth-graders performed
             below the Basic level—the largest share in more than two decades. Twelfth-grade reading
@@ -63,12 +63,12 @@ export default function AboutPage() {
 
           <p>
             For the subset of high-frequency words that contain irregular or unexpected letter-sound
-            patterns (often called &ldquo;heart words&rdquo;), research grounded in the Science of
+            patterns (often called “heart words”), research grounded in the Science of
             Reading emphasizes orthographic mapping. Students learn to identify the regular,
-            decodable parts of the word and then deliberately &ldquo;map&rdquo; or remember by heart
+            decodable parts of the word and then deliberately “map” or remember by heart
             the irregular portion.
             <sup className="text-emerald-700 font-medium">[6][7]</sup> Recent experimental
-            comparisons demonstrate that methods requiring active attention to a word&apos;s
+            comparisons demonstrate that methods requiring active attention to a word{"'"}s
             spelling—whether mispronunciation correction or heart-word mapping—produce stronger
             reading and spelling gains than simple look-and-say practice.
             <sup className="text-emerald-700 font-medium">[7][8]</sup> This approach reduces memory
@@ -113,7 +113,7 @@ export default function AboutPage() {
 
           <p>
             Our deepest hope is that Rocket Readers becomes a quiet, steady partner for the adults
-            who care most about children&apos;s reading success. Whether you are a classroom teacher
+            who care most about children{"'"}s reading success. Whether you are a classroom teacher
             looking for ready-to-print weekly modules, a parent supporting an emerging reader at the
             kitchen table, or an ESL educator seeking culturally welcoming, data-informed practice,
             we want the tools you need to be accurate, engaging, and immediately useful. Literacy
@@ -217,7 +217,7 @@ export default function AboutPage() {
                 </a>
               </li>
               <li>
-                Archer, A. L., Gleason, M. M., &amp; Vachon, V. L. (2003). Decoding and fluency:
+                Archer, A. L., Gleason, M. M., {"&"} Vachon, V. L. (2003). Decoding and fluency:
                 Foundation skills for struggling older readers.{' '}
                 <em>Learning Disability Quarterly</em>, 26(2), 89–101.
               </li>
@@ -230,6 +230,12 @@ export default function AboutPage() {
             </p>
           </section>
         </div>
+
+        <p className="text-center mt-10">
+          <Link href="/about/sample-books" className="text-emerald-700 font-semibold hover:underline">
+            Try a full book free →
+          </Link>
+        </p>
 
         <p className="text-center mt-10">
           <Link href="/" className="text-emerald-700 font-semibold hover:underline">

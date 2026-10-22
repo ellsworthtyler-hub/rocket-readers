@@ -17,12 +17,15 @@ interface BookActionsProps {
   gutenbergId: string | number;
   /** When true, hide sample/full/packet CTAs (contaminated SoT). */
   contentQuarantined?: boolean;
+  /** True only when a classwork packet file actually exists for this book. */
+  hasPacket?: boolean;
 }
 
 export default function BookActions({
   bookId,
   gutenbergId,
   contentQuarantined = false,
+  hasPacket = false,
 }: BookActionsProps) {
   const { isPremium, loading } = useAuth();
   const router = useRouter();
@@ -163,7 +166,7 @@ export default function BookActions({
 
       {!loading && !isPremium && (
         <p className="text-xs text-center text-slate-400">
-          Free: Gutenberg original + sample enhanced edition. Premium: full interactive ebook + 10-week classwork packet.
+          Free: Gutenberg original + sample enhanced edition. Premium: full interactive ebook{hasPacket ? ' + classwork packet' : ''}.
         </p>
       )}
     </div>

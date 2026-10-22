@@ -10,12 +10,22 @@ export function siteBase(): string {
   return (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 }
 
-export function priceIdForPlan(plan: PaidPlan): string {
+export type BillingInterval = 'month' | 'year';
+
+export function priceIdForPlan(plan: PaidPlan, interval: BillingInterval = 'month'): string {
   if (plan === 'teacher') {
     const id = process.env.STRIPE_PRICE_ID_TEACHER_MONTHLY
-      || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER_MONTHLY;
+      || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER_MONTHLY
+      || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER;
     if (!id) throw new Error('Teacher price is not configured');
     return id;
+  }
+
+  if (interval === 'year') {
+    const yearly = process.env.STRIPE_PRICE_ID_PREMIUM_YEARLY
+      || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY;
+    if (!yearly) throw new Error('Yearly price is not configured');
+    return yearly;
   }
 
   const id = process.env.STRIPE_PRICE_ID_PREMIUM_MONTHLY
@@ -30,7 +40,8 @@ export function planFromPrice(priceId: string | null | undefined, metadataPlan?:
   if (!priceId) return null;
 
   const teacher = process.env.STRIPE_PRICE_ID_TEACHER_MONTHLY
-    || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER_MONTHLY;
+    || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER_MONTHLY
+    || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER;
   const premium = process.env.STRIPE_PRICE_ID_PREMIUM_MONTHLY
     || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PREMIUM_MONTHLY;
 
@@ -38,6 +49,7 @@ export function planFromPrice(priceId: string | null | undefined, metadataPlan?:
   if (premium && priceId === premium) return 'premium';
   if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY) return 'premium';
   if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY) return 'premium';
+  if (priceId === process.env.STRIPE_PRICE_ID_PREMIUM_YEARLY) return 'premium';
   if (LEGACY_PREMIUM_PRICE_IDS.has(priceId)) return 'premium';
   return null;
 }
