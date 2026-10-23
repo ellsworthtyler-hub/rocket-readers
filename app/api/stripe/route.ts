@@ -3,6 +3,7 @@ import { userFromAuthHeader } from '@/lib/access';
 import { loadSubscription, stripe, syncProfileFromSubscription } from '@/lib/billing';
 import { priceIdForPlan, siteBase, type PaidPlan } from '@/lib/plans';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { attributionFromCookieHeader, attributionMetadata } from '@/lib/attribution';
 
 export async function POST(req: Request) {
   try {
@@ -51,14 +52,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // First-touch UTM/referrer data from the rr_attr cookie, for purchase attribution.
+    const attribution = attributionMetadata(attributionFromCookieHeader(req.headers.get('cookie')));
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${siteBase()}/account?success=true`,
       cancel_url: `${siteBase()}/premium?canceled=true`,
       client_reference_id: user.id,
-      metadata: { userId: user.id, plan },
-      subscription_data: { metadata: { userId: user.id, plan } },
+      metadata: { ...attribution, userId: user.id, plan },
+      subscription_data: { metadata: { ...attribution, userId: user.id, plan } },
       ...(profile?.stripe_customer_id
         ? { customer: profile.stripe_customer_id }
         : user.email
