@@ -1,6 +1,7 @@
 //  FILE: app/page.tsx
 //  Homepage — Cosmic theme
 
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BookCard } from '../components/BookCard';
 import { BadgeLegend } from '@/components/BadgeLegend';
@@ -12,6 +13,13 @@ import {
 import { FEATURED_SOURCE_IDS } from '@/lib/featured';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: { absolute: 'Rocket Readers: sight-word books for young readers' },
+  description:
+    'Find public-domain books with the highest Dolch and Fry sight-word coverage, sorted by reading grade, with enhanced Rocket Readers editions for K-3 readers.',
+  alternates: { canonical: '/' },
+};
 
 export default async function HomePage() {
   const [{ books: hotBooks }, stats, libraryStats] = await Promise.all([
