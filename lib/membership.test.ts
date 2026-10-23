@@ -40,6 +40,30 @@ describe('paid access', () => {
   });
 });
 
+describe('live Stripe prices', () => {
+  it('maps the live teacher and yearly prices, and both paid tiers pass the gate', () => {
+    for (const key of [
+      'STRIPE_PRICE_ID_TEACHER_MONTHLY',
+      'NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER_MONTHLY',
+      'STRIPE_PRICE_ID_PREMIUM_MONTHLY',
+      'NEXT_PUBLIC_STRIPE_PRICE_ID_PREMIUM_MONTHLY',
+      'STRIPE_PRICE_ID_PREMIUM_YEARLY',
+    ]) delete process.env[key];
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEACHER = 'price_1USPB72Lg3mRV1t1BkztRq6W';
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY = 'price_1TMJq62Lg3mRV1t1zeqKnkeO';
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY = 'price_1TMJqs2Lg3mRV1t1cnMqAEcu';
+
+    const teacher = planFromPrice('price_1USPB72Lg3mRV1t1BkztRq6W');
+    const yearly = planFromPrice('price_1TMJqs2Lg3mRV1t1cnMqAEcu');
+    assert.equal(teacher, 'teacher');
+    assert.equal(yearly, 'premium');
+    assert.equal(planFromPrice('price_1TMJq62Lg3mRV1t1zeqKnkeO'), 'premium');
+
+    assert.equal(profileIsPaid({ plan: teacher, subscription_status: 'active' }), true);
+    assert.equal(profileIsPaid({ plan: yearly, subscription_status: 'active' }), true);
+  });
+});
+
 describe('student cookie', () => {
   it('round-trips a profile id and rejects a bad signature or an expired cookie', () => {
     process.env.STUDENT_COOKIE_SECRET = 'test-secret';
