@@ -9,7 +9,9 @@
 //
 // Security:
 //   - sample: public
-//   - full: requires authenticated premium user (profiles.is_premium)
+//   - full: requires a paid plan (premium or teacher, active/trialing) via resolvePaidAccess,
+//     either a signed-in adult or a valid student class-code session.
+//     Legacy profiles with only is_premium=true are still honored.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
