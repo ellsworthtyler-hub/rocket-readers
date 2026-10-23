@@ -33,7 +33,15 @@ export default function PrivacyPage() {
         <li>
           <strong>Usage information.</strong> We collect basic usage and analytics data (such as
           pages visited, device and browser type, and approximate location from your IP address)
-          to keep the site working and improve it.
+          to keep the site working and improve it. We use Vercel Web Analytics and Speed Insights,
+          which measure page views and performance without advertising cookies.
+        </li>
+        <li>
+          <strong>Cookies.</strong> We use cookies to keep you signed in and to remember settings.
+          On your first visit we also store a first-party cookie (rr_attr, kept for 90 days) noting
+          how you found us (for example a campaign link or referring site). If you subscribe, that
+          information is attached to the Stripe checkout so we can tell which campaigns work. It is
+          not shared with advertisers.
         </li>
       </ul>
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { track } from '@vercel/analytics';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
@@ -35,6 +36,7 @@ export default function PremiumClient({ canceled }: { canceled: boolean }) {
         setError('Please log in first.');
         return;
       }
+      track('checkout_started', { plan, interval });
       const res = await fetch('/api/stripe', {
         method: 'POST',
         headers: {

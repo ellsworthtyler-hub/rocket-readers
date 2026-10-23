@@ -4,7 +4,10 @@
 import type { Metadata } from 'next';
 import { Fredoka, Nunito, Source_Serif_4 } from 'next/font/google';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { AuthProvider } from '@/components/AuthProvider';
+import { AttributionCapture } from '@/components/AttributionCapture';
 import NavBar from '@/components/NavBar';
 import SiteFooter from '@/components/SiteFooter';
 import ThemeBody from '@/components/ThemeBody';
@@ -60,6 +63,9 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <SiteFooter />
         </AuthProvider>
+        <AttributionCapture />
+        <Analytics />
+        <SpeedInsights />
       </ThemeBody>
     </html>
   );
