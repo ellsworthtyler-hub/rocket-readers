@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { SAMPLE_FULL_BOOKS, SAMPLE_FULL_BOOK_SLOTS } from '@/lib/sampleBooks';
 
 export const metadata: Metadata = {
-  title: 'Try a full book free — Rocket Readers',
+  title: 'Try a full book free',
+  alternates: { canonical: '/about/sample-books' },
   description: 'Read complete Rocket Readers editions free before you subscribe.',
 };
 
