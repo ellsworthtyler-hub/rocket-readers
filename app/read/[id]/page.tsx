@@ -2,6 +2,7 @@
 //  URL param = public Gutenberg source_id
 //  Layout gives the interactive ebook iframe near full viewport height.
 
+import type { Metadata } from 'next';
 import { supabase } from '@/lib/supabaseClient';
 import RocketReader from '@/components/ui/Rocketreader';
 import { notFound } from 'next/navigation';
@@ -10,6 +11,28 @@ import {
   CONTENT_QUARANTINE_REASON,
   isQuarantinedSourceId,
 } from '@/lib/contentQuarantine';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  // The reader duplicates the book page; keep it out of the index and point at the book page.
+  const robots = { index: false, follow: true };
+  if (!/^\d{1,10}$/.test(id) || isQuarantinedSourceId(id)) return { title: 'Reader', robots };
+  const { data } = await supabase
+    .from('rr_book')
+    .select('title')
+    .eq('source_id', id)
+    .eq('source', 'gutenberg')
+    .maybeSingle();
+  return {
+    title: data?.title ? `Read ${data.title}` : 'Reader',
+    robots,
+    alternates: { canonical: `/book/${id}` },
+  };
+}
 
 export default async function ReadPage({
   params,
