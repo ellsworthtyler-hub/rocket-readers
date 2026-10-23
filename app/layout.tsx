@@ -8,6 +8,7 @@ import { AuthProvider } from '@/components/AuthProvider';
 import NavBar from '@/components/NavBar';
 import SiteFooter from '@/components/SiteFooter';
 import ThemeBody from '@/components/ThemeBody';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, jsonLd } from '@/lib/seo';
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -28,8 +29,21 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: 'Rocket Readers',
-  description: 'Find books with the highest sight-word coverage for young readers',
+  metadataBase: new URL(SITE_URL),
+  title: { default: 'Rocket Readers: sight-word books for young readers', template: '%s | Rocket Readers' },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: { type: 'website', siteName: SITE_NAME, locale: 'en_US', url: SITE_URL },
+  twitter: { card: 'summary_large_image' },
+};
+
+const organizationLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/opengraph-image`,
+  description: SITE_DESCRIPTION,
 };
 
 export default function RootLayout({
@@ -40,6 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${nunito.variable} ${fredoka.variable} ${sourceSerif.variable}`}>
       <ThemeBody className={nunito.className}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(organizationLd) }} />
         <AuthProvider>
           <NavBar />
           <main className="flex-1">{children}</main>

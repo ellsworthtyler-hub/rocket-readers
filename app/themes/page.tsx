@@ -1,11 +1,18 @@
 //  FILE: app/themes/page.tsx
 //  Browse parent themes from processed rr_book + rr_book_metadata
 
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { RR_PARENT_THEMES } from '@/lib/themes';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Browse books by theme',
+  description: 'Browse public-domain books by theme, with sight-word coverage and reading grade for every title.',
+  alternates: { canonical: '/themes' },
+};
 
 export default async function ThemesPage() {
   // Count processed books per official parent theme on rr_book.theme

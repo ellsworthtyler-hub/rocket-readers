@@ -7,6 +7,8 @@ import { hasClassworkPacket } from '@/lib/packets';
 import BookEnrichmentHero from '@/components/BookEnrichmentHero';
 import { CONTENT_QUARANTINE_REASON, isQuarantinedSourceId } from '@/lib/contentQuarantine';
 import type { Metadata } from 'next';
+import { cache } from 'react';
+import { SITE_URL, bookSeoDescription, bookSeoTitle, grade, jsonLd } from '@/lib/seo';
 import BookFeedback from '@/components/ui/BookFeedback';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -70,8 +72,23 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  return isQuarantinedSourceId(id) ? { robots: { index: false, follow: false } } : {};
+  const noindex = { robots: { index: false, follow: false } };
+  if (!/^\d{1,10}$/.test(id) || isQuarantinedSourceId(id)) return noindex;
+  const meta = await getBookMeta(id);
+  if (!meta) return noindex;
+  const title = bookSeoTitle(meta);
+  const description = bookSeoDescription(meta);
+  return {
+    title,
+    description,
+    alternates: { canonical: `/book/${id}` },
+    openGraph: { type: 'book', title, description, url: `/book/${id}` },
+    twitter: { card: 'summary_large_image', title, description },
+  };
 }
+
+// One metadata lookup per request, shared by generateMetadata, the page, and the OG image.
+const getBookMeta = cache(getBookMetadataForSourceId);
 
 export default async function BookPage({
   params,
@@ -85,7 +102,7 @@ export default async function BookPage({
     notFound();
   }
 
-  const meta = await getBookMetadataForSourceId(sourceId);
+  const meta = await getBookMeta(sourceId);
   if (!meta) {
     notFound();
   }
@@ -142,8 +159,27 @@ export default async function BookPage({
     ['3rd Grade', breadthPct(meta.dolch_3rd_breadth), meta.dolch_3rd_unique],
   ];
 
+  const bookGrade = grade(meta.flesch_grade);
+  const bookLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Book',
+    name: meta.title,
+    ...(meta.author && meta.author !== 'Unknown Author'
+      ? { author: { '@type': 'Person', name: meta.author } }
+      : {}),
+    url: `${SITE_URL}/book/${meta.sourceId}`,
+    image: `${SITE_URL}/book/${meta.sourceId}/opengraph-image`,
+    isAccessibleForFree: true,
+    ...(meta.isbn ? { isbn: meta.isbn } : {}),
+    ...(bookGrade ? { educationalLevel: `Flesch-Kincaid grade ${bookGrade}` } : {}),
+    ...(meta.short_description ? { description: meta.short_description } : {}),
+    sameAs: `https://www.gutenberg.org/ebooks/${meta.sourceId}`,
+    publisher: { '@type': 'Organization', name: 'Rocket Readers', url: SITE_URL },
+  };
+
   return (
     <div className="pb-20">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(bookLd) }} />
       <div className="border-b border-slate-700/80 bg-slate-950/70 backdrop-blur px-6 py-4">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <Link

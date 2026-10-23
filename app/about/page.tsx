@@ -6,7 +6,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About Us — Rocket Readers',
+  title: 'About Us',
+  alternates: { canonical: '/about' },
   description:
     'Our mission to help young readers and English learners with research-aligned sight words, Heart words, syllable practice, and book-specific classroom packets.',
 };

@@ -3,7 +3,8 @@ import Link from 'next/link';
 import LegalPage from '@/components/LegalPage';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Rocket Readers',
+  title: 'Privacy Policy',
+  alternates: { canonical: '/privacy' },
   description: 'How Rocket Readers collects, uses, and protects information.',
 };
 
