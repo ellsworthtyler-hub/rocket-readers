@@ -140,8 +140,16 @@ export default function BookActions({
           </Link>
         )}
 
-        {/* 4. Premium: classwork packets */}
-        {loading ? (
+        {/* 4. Premium: classwork packets (only when a packet is available) */}
+        {!hasPacket ? (
+          <div
+            role="note"
+            aria-label="Classroom Packet in Development"
+            className="flex-1 py-4 px-4 bg-slate-800/60 text-slate-400 font-bold rounded-2xl text-center border-2 border-dashed border-slate-600 cursor-default select-none"
+          >
+            Classroom Packet in Development
+          </div>
+        ) : loading ? (
           <div className="flex-1 py-4 px-4 bg-slate-800 text-slate-500 font-bold rounded-2xl text-center animate-pulse">
             …
           </div>

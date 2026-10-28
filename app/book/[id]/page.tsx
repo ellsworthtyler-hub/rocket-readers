@@ -3,7 +3,7 @@
 //  Cosmic-theme book dashboard
 
 import BookActions from '@/components/ui/BookActions';
-import { hasClassworkPacket } from '@/lib/packets';
+import { packetAvailableFor } from '@/lib/packetStatus';
 import BookEnrichmentHero from '@/components/BookEnrichmentHero';
 import { CONTENT_QUARANTINE_REASON, isQuarantinedSourceId } from '@/lib/contentQuarantine';
 import type { Metadata } from 'next';
@@ -267,7 +267,7 @@ export default async function BookPage({
           bookId={meta.sourceId}
           gutenbergId={meta.sourceId}
           contentQuarantined={!!meta.content_quarantined}
-          hasPacket={meta.content_quarantined ? false : await hasClassworkPacket(meta.sourceId)}
+          hasPacket={meta.content_quarantined ? false : await packetAvailableFor(meta.sourceId)}
         />
 
         {!meta.last_processed && (
