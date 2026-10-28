@@ -1,6 +1,7 @@
 # FILE: rr_gutenberg_updater.py — Daily Gutenberg catalog + queue (GitHub Action)
 # Runs in rocket-readers/.github/workflows/update_gutenberg.yml
 #
+# v3.1 (2026-10-28): clean+upload cleaned-books/{id}.txt at ingest (was missing → 404 no_sot)
 # v3.0 (2026-07):
 #   - Paginate existing source_id fetch (PostgREST default limit is 1000 — was broken)
 #   - Queue uses INTERNAL rr_book.id (FK), not Gutenberg number
@@ -274,6 +275,17 @@ def update_gutenberg() -> bool:
                 {"book_id": internal_id, "status": "pending"},
                 on_conflict="book_id",
             ).execute()
+
+            # v3.1: clean + upload SoT text so the drain worker can analyze it
+            try:
+                from rr_clean_upload import process as _clean_upload, block_ids as _block_ids
+                cu = _clean_upload(supabase, {"id": internal_id, "source": "gutenberg", "source_id": str(gutenberg_id),
+                                              "title": meta["title"], "author": meta["author"]}, _block_ids())
+                logger.info(f"🧹 clean/upload #{gutenberg_id}: {cu}")
+                if cu.startswith("skip:"):
+                    supabase.table("rr_processing_queue").update({"status": "failed", "error_message": f"NON_PD_SKIP {cu}"}).eq("book_id", internal_id).execute()
+            except Exception as ce:
+                errors.append(f"#{gutenberg_id} clean/upload: {ce}")
 
             added_books.append((gutenberg_id, meta["title"], meta["author"]))
             logger.info(

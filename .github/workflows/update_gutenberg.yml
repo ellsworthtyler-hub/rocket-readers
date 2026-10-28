@@ -43,4 +43,4 @@ jobs:
         if: always()
         run: |
           echo "### Gutenberg updater finished" >> $GITHUB_STEP_SUMMARY
-          echo "Schedule: 09:00 and 21:00 UTC. Discord + Supabase rr_book/queue." >> $GITHUB_STEP_SUMMARY
+          echo "Schedule: 09:00 and 21:00 UTC. Discord + Supabase rr_book/queue + cleaned-books upload (v3.1)." >> $GITHUB_STEP_SUMMARY
