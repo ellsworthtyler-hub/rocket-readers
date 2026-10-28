@@ -15,6 +15,10 @@
  * - Bad-stats audit 2026-10-17: audio-only / no-text ids whose SoT is another book, + 15 PG stubs (DRAFT)
  */
 
+// QA auto-quarantine snapshot (rr_book_qa.quarantined; regenerate with qa-restart/export_quarantine.py).
+import qaQuarantineIds from '@/data/qa_quarantine_source_ids.json';
+const QA_QUARANTINE = new Set<number>(qaQuarantineIds as number[]);
+
 const QUARANTINED_SINGLETONS = new Set<number>([
   12701,
   12711,
@@ -80,6 +84,7 @@ export function isQuarantinedSourceId(sourceId: string | number | null | undefin
   const n = typeof sourceId === 'number' ? sourceId : Number(String(sourceId).trim());
   if (!Number.isFinite(n) || !Number.isInteger(n)) return false;
   if (QUARANTINED_SINGLETONS.has(n)) return true;
+  if (QA_QUARANTINE.has(n)) return true;
   if (BADSTATS_20261017_SINGLETONS.has(n)) return true;
   if (BADSTATS_20261017_RANGES.some(([lo, hi]) => n >= lo && n <= hi)) return true;
   return QUARANTINE_RANGES.some(([lo, hi]) => n >= lo && n <= hi);
