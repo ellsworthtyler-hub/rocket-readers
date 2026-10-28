@@ -2,6 +2,7 @@
 //  URL param = public Gutenberg source_id
 //  Layout gives the interactive ebook iframe near full viewport height.
 
+import { isQuarantinedServer } from '@/lib/qaQuarantine';
 import type { Metadata } from 'next';
 import { supabase } from '@/lib/supabaseClient';
 import RocketReader from '@/components/ui/Rocketreader';
@@ -20,7 +21,7 @@ export async function generateMetadata({
   const { id } = await params;
   // The reader duplicates the book page; keep it out of the index and point at the book page.
   const robots = { index: false, follow: true };
-  if (!/^\d{1,10}$/.test(id) || isQuarantinedSourceId(id)) return { title: 'Reader', robots };
+  if (!/^\d{1,10}$/.test(id) || (await isQuarantinedServer(id))) return { title: 'Reader', robots };
   const { data } = await supabase
     .from('rr_book')
     .select('title')
@@ -45,7 +46,7 @@ export default async function ReadPage({
   const resolvedSearch = await searchParams;
 
   const sourceId = resolvedParams.id;
-  if (isQuarantinedSourceId(sourceId)) {
+  if (await isQuarantinedServer(sourceId)) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-20 text-center">
         <h1 className="text-2xl font-bold text-white mb-4">Edition unavailable</h1>
