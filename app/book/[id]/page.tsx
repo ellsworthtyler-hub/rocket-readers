@@ -2,6 +2,7 @@
 //  URL id = public Gutenberg source_id; stats from rr_book_metadata
 //  Cosmic-theme book dashboard
 
+import { isQuarantinedServer } from '@/lib/qaQuarantine';
 import BookActions from '@/components/ui/BookActions';
 import { hasClassworkPacket } from '@/lib/packets';
 import BookEnrichmentHero from '@/components/BookEnrichmentHero';
@@ -73,7 +74,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const noindex = { robots: { index: false, follow: false } };
-  if (!/^\d{1,10}$/.test(id) || isQuarantinedSourceId(id)) return noindex;
+  if (!/^\d{1,10}$/.test(id) || (await isQuarantinedServer(id))) return noindex;
   const meta = await getBookMeta(id);
   if (!meta) return noindex;
   const title = bookSeoTitle(meta);
@@ -98,7 +99,7 @@ export default async function BookPage({
   const resolvedParams = await params;
   const sourceId = resolvedParams.id;
 
-  if (!/^\d{1,10}$/.test(sourceId) || isQuarantinedSourceId(sourceId)) {
+  if (!/^\d{1,10}$/.test(sourceId) || (await isQuarantinedServer(sourceId))) {
     notFound();
   }
 

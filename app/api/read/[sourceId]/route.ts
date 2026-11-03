@@ -13,6 +13,7 @@
 //     either a signed-in adult or a valid student class-code session.
 //     Legacy profiles with only is_premium=true are still honored.
 
+import { isQuarantinedServer } from '@/lib/qaQuarantine';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { resolvePaidAccess } from '@/lib/access';
@@ -45,7 +46,7 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid sourceId' }, { status: 400 });
   }
 
-  if (isQuarantinedSourceId(sourceId)) {
+  if (await isQuarantinedServer(sourceId)) {
     return NextResponse.json(
       {
         error: CONTENT_QUARANTINE_REASON,
