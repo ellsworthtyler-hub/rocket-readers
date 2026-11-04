@@ -79,8 +79,9 @@ export async function fetchThemeOptions(): Promise<{ theme: string; count: numbe
     RR_PARENT_THEMES.map(async (t): Promise<{ theme: string; count: number } | null> => {
       const { count, error } = await supabase
         .from('rr_book_metadata')
-        .select('book_id, rr_book!inner(theme)', { count: 'exact', head: true })
+        .select('book_id, rr_book!inner(theme, source)', { count: 'exact', head: true })
         .not('last_processed', 'is', null)
+        .eq('rr_book.source', 'gutenberg')
         .eq('rr_book.theme', t);
       if (error) {
         console.warn('theme count failed for', t, error.message);
@@ -100,7 +101,8 @@ export async function fetchSearchPage(
   let query = supabase
     .from('rr_book_metadata')
     .select(LIST_SELECT, { count: 'exact' })
-    .not('last_processed', 'is', null);
+    .not('last_processed', 'is', null)
+    .eq('rr_book.source', 'gutenberg');
 
   if (f.minDolch !== '0') query = query.gte('dolch_percentage', parseFloat(f.minDolch));
   if (f.minFry !== '0') query = query.gte('fry_percentage', parseFloat(f.minFry));
