@@ -2,6 +2,7 @@
 //  Single source of truth for library queries against rr_book + rr_book_metadata
 import { supabase } from './supabaseClient';
 import { isQuarantinedSourceId } from './contentQuarantine';
+import { isSourceEnabled, type BookSource } from './bookSources';
 
 export interface BookCardData {
   id: string; // public Gutenberg source_id
@@ -17,6 +18,12 @@ export interface BookCardData {
 
 export interface BookDetailMeta {
   sourceId: string;
+  /** rr_book.source ('gutenberg' | 'wikisource' | 'wikibooks' | 'gutenberg_au'). */
+  source: BookSource;
+  /** rr_book.original_url (page on the source site), when known. */
+  original_url: string | null;
+  /** rr_book.rights text. */
+  rights: string | null;
   internalBookId: number;
   title: string;
   author: string;
@@ -191,12 +198,12 @@ export function mapBookCard(row: any): BookCardData {
   };
 }
 
-export async function resolveRrBookBySourceId(sourceId: string) {
+export async function resolveRrBookBySourceId(sourceId: string, source: BookSource = 'gutenberg') {
   const { data, error } = await supabase
     .from('rr_book')
-    .select('id, source_id, title, author, theme, subjects, cover_url, short_description, isbn, external_ids')
+    .select('id, source, source_id, title, author, theme, subjects, cover_url, short_description, isbn, external_ids, original_url, rights')
     .eq('source_id', sourceId)
-    .eq('source', 'gutenberg')
+    .eq('source', source)
     .maybeSingle();
 
   if (error) {
@@ -207,12 +214,19 @@ export async function resolveRrBookBySourceId(sourceId: string) {
 }
 
 export async function getBookMetadataForSourceId(
-  sourceId: string
+  sourceId: string,
+  source: BookSource = 'gutenberg'
 ): Promise<BookDetailMeta | null> {
   // Quarantined editions are hidden everywhere (book page 404s via notFound()).
-  if (isQuarantinedSourceId(sourceId)) return null;
-  const book = await resolveRrBookBySourceId(sourceId);
+  if (isQuarantinedSourceId(sourceId, source)) return null;
+  if (!isSourceEnabled(source)) return null;
+  const book = await resolveRrBookBySourceId(sourceId, source);
   if (!book) return null;
+  if (source !== 'gutenberg') {
+    // Server-only check (service role): passed QA 4b-4d, not quarantined, source gate.
+    const { isServableBook } = await import('./bookEligibility');
+    if (!(await isServableBook(source, book.id))) return null;
+  }
 
   const { data: meta, error: metaErr } = await supabase
     .from('rr_book_metadata')
@@ -241,12 +255,15 @@ export async function getBookMetadataForSourceId(
 
   return {
     sourceId: String(book.source_id),
+    source,
+    original_url: book.original_url ?? null,
+    rights: book.rights ?? null,
     internalBookId: book.id,
     title: book.title || 'Unknown Title',
     author: book.author || 'Unknown Author',
     theme: book.theme || 'Uncategorized',
     ...pickMetaFields(meta || {}),
-    content_quarantined: isQuarantinedSourceId(book.source_id),
+    content_quarantined: isQuarantinedSourceId(book.source_id, source),
     cover_url: book.cover_url ?? null,
     short_description: book.short_description ?? null,
     isbn: book.isbn ?? null,
