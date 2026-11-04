@@ -79,8 +79,26 @@ const BADSTATS_20261017_RANGES: [number, number][] = [
   [69831, 69832],
 ];
 
-export function isQuarantinedSourceId(sourceId: string | number | null | undefined): boolean {
+/** Book sources stored in rr_book.source. */
+export type BookSource = 'gutenberg' | 'wikisource' | 'wikibooks' | 'gutenberg_au';
+
+/** Cache/lookup key for a book: source + verbatim source_id (keeps leading zeros). */
+export function quarantineKey(source: string, sourceId: string | number): string {
+  return `${source}:${String(sourceId).trim()}`;
+}
+
+/**
+ * Static (committed) quarantine check. All static lists below are Gutenberg
+ * source_ids, so they apply ONLY when source === 'gutenberg'; other sources
+ * share numeric ids with unrelated Gutenberg books and rely on the live
+ * rr_book_qa check in lib/qaQuarantine.ts.
+ */
+export function isQuarantinedSourceId(
+  sourceId: string | number | null | undefined,
+  source: string = 'gutenberg'
+): boolean {
   if (sourceId == null || sourceId === '') return false;
+  if (source !== 'gutenberg') return false;
   const n = typeof sourceId === 'number' ? sourceId : Number(String(sourceId).trim());
   if (!Number.isFinite(n) || !Number.isInteger(n)) return false;
   if (QUARANTINED_SINGLETONS.has(n)) return true;
