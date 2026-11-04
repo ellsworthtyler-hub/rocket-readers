@@ -1,17 +1,20 @@
 //  FILE:  app/book/[id]/page.tsx
-//  URL id = public Gutenberg source_id; stats from rr_book_metadata
+//  URL id = Gutenberg source_id, or {wikisource|wikibooks|pgau}-{source_id} (lib/bookSources.ts)
+//  Stats from rr_book_metadata. Non-Gutenberg: stats + attribution + link to original only.
 //  Cosmic-theme book dashboard
 
 import { isQuarantinedServer } from '@/lib/qaQuarantine';
 import BookActions from '@/components/ui/BookActions';
 import { hasClassworkPacket } from '@/lib/packets';
 import BookEnrichmentHero from '@/components/BookEnrichmentHero';
-import { CONTENT_QUARANTINE_REASON, isQuarantinedSourceId } from '@/lib/contentQuarantine';
+import { CONTENT_QUARANTINE_REASON } from '@/lib/contentQuarantine';
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { SITE_URL, bookSeoDescription, bookSeoTitle, grade, jsonLd } from '@/lib/seo';
 import BookFeedback from '@/components/ui/BookFeedback';
 import { notFound } from 'next/navigation';
+import { bookHref, bookRefParam, parseBookRef, sourceInfo, type BookRef } from '@/lib/bookSources';
+import SourceAttribution from '@/components/SourceAttribution';
 import Link from 'next/link';
 import { BadgeLegend } from '@/components/BadgeLegend';
 import {
@@ -74,22 +77,26 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const noindex = { robots: { index: false, follow: false } };
-  if (!/^\d{1,10}$/.test(id) || (await isQuarantinedServer(id))) return noindex;
-  const meta = await getBookMeta(id);
+  const ref = parseBookRef(id);
+  if (!ref || (await isQuarantinedServer(ref.sourceId, ref.source))) return noindex;
+  const meta = await getBookMeta(ref.source, ref.sourceId);
   if (!meta) return noindex;
   const title = bookSeoTitle(meta);
   const description = bookSeoDescription(meta);
+  const canonical = bookHref(ref.source, ref.sourceId);
   return {
     title,
     description,
-    alternates: { canonical: `/book/${id}` },
-    openGraph: { type: 'book', title, description, url: `/book/${id}` },
+    alternates: { canonical },
+    openGraph: { type: 'book', title, description, url: canonical },
     twitter: { card: 'summary_large_image', title, description },
   };
 }
 
 // One metadata lookup per request, shared by generateMetadata, the page, and the OG image.
-const getBookMeta = cache(getBookMetadataForSourceId);
+const getBookMeta = cache((source: BookRef['source'], sourceId: string) =>
+  getBookMetadataForSourceId(sourceId, source)
+);
 
 export default async function BookPage({
   params,
@@ -97,13 +104,13 @@ export default async function BookPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = await params;
-  const sourceId = resolvedParams.id;
+  const ref = parseBookRef(resolvedParams.id);
 
-  if (!/^\d{1,10}$/.test(sourceId) || (await isQuarantinedServer(sourceId))) {
+  if (!ref || (await isQuarantinedServer(ref.sourceId, ref.source))) {
     notFound();
   }
 
-  const meta = await getBookMeta(sourceId);
+  const meta = await getBookMeta(ref.source, ref.sourceId);
   if (!meta) {
     notFound();
   }
@@ -161,6 +168,9 @@ export default async function BookPage({
   ];
 
   const bookGrade = grade(meta.flesch_grade);
+  const info = sourceInfo(meta.source);
+  const isGutenberg = meta.source === 'gutenberg';
+  const refParam = bookRefParam(meta.source, meta.sourceId);
   const bookLd = {
     '@context': 'https://schema.org',
     '@type': 'Book',
@@ -168,13 +178,18 @@ export default async function BookPage({
     ...(meta.author && meta.author !== 'Unknown Author'
       ? { author: { '@type': 'Person', name: meta.author } }
       : {}),
-    url: `${SITE_URL}/book/${meta.sourceId}`,
-    image: `${SITE_URL}/book/${meta.sourceId}/opengraph-image`,
+    url: `${SITE_URL}/book/${refParam}`,
+    image: `${SITE_URL}/book/${refParam}/opengraph-image`,
     isAccessibleForFree: true,
     ...(meta.isbn ? { isbn: meta.isbn } : {}),
     ...(bookGrade ? { educationalLevel: `Flesch-Kincaid grade ${bookGrade}` } : {}),
     ...(meta.short_description ? { description: meta.short_description } : {}),
-    sameAs: `https://www.gutenberg.org/ebooks/${meta.sourceId}`,
+    ...(isGutenberg
+      ? { sameAs: `https://www.gutenberg.org/ebooks/${meta.sourceId}` }
+      : meta.original_url
+        ? { sameAs: meta.original_url, isBasedOn: meta.original_url }
+        : {}),
+    ...(info.licenseUrl ? { license: info.licenseUrl } : {}),
     publisher: { '@type': 'Organization', name: 'Rocket Readers', url: SITE_URL },
   };
 
@@ -196,7 +211,7 @@ export default async function BookPage({
         <BookEnrichmentHero
           title={meta.title}
           author={meta.author}
-          gutenbergId={meta.sourceId}
+          gutenbergId={isGutenberg ? meta.sourceId : null}
           enrichment={{
             cover_url: meta.cover_url,
             short_description: meta.short_description,
@@ -206,6 +221,13 @@ export default async function BookPage({
             ratings_count: meta.ratings_count,
             popularity_score: meta.popularity_score,
           }}
+        />
+
+        <SourceAttribution
+          source={meta.source}
+          title={meta.title}
+          sourceId={meta.sourceId}
+          originalUrl={meta.original_url}
         />
 
         <BadgeLegend />
@@ -264,12 +286,26 @@ export default async function BookPage({
             {CONTENT_QUARANTINE_REASON}
           </div>
         ) : null}
-        <BookActions
-          bookId={meta.sourceId}
-          gutenbergId={meta.sourceId}
-          contentQuarantined={!!meta.content_quarantined}
-          hasPacket={meta.content_quarantined ? false : await hasClassworkPacket(meta.sourceId)}
-        />
+        {isGutenberg ? (
+          <BookActions
+            bookId={meta.sourceId}
+            gutenbergId={meta.sourceId}
+            contentQuarantined={!!meta.content_quarantined}
+            hasPacket={meta.content_quarantined ? false : await hasClassworkPacket(meta.sourceId)}
+          />
+        ) : meta.original_url ? (
+          // Wiki/other sources: stats page + link to the original only (no reader, editions, or packets).
+          <div className="mb-8">
+            <a
+              href={meta.original_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-chunky inline-flex items-center gap-2 text-sm py-2 px-5"
+            >
+              Read the original on {info.label} ↗
+            </a>
+          </div>
+        ) : null}
 
         {!meta.last_processed && (
           <div className="mb-8 p-4 bg-amber-900/40 border border-amber-500/40 rounded-2xl text-amber-100 text-sm">
@@ -433,7 +469,7 @@ export default async function BookPage({
           </div>
         </div>
 
-        <BookFeedback bookId={meta.sourceId} />
+        {isGutenberg ? <BookFeedback bookId={meta.sourceId} /> : null}
       </div>
     </div>
   );

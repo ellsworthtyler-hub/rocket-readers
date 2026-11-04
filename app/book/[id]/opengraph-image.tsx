@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { isQuarantinedSourceId } from '@/lib/contentQuarantine';
 import { getBookMetadataForSourceId } from '@/lib/data';
+import { parseBookRef } from '@/lib/bookSources';
 import { OG_SIZE, OgCard } from '@/lib/ogCard';
 import { grade, pct } from '@/lib/seo';
 
@@ -11,8 +12,11 @@ export const revalidate = 86400;
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const ref = parseBookRef(id);
   const meta =
-    /^\d{1,10}$/.test(id) && !isQuarantinedSourceId(id) ? await getBookMetadataForSourceId(id) : null;
+    ref && !isQuarantinedSourceId(ref.sourceId, ref.source)
+      ? await getBookMetadataForSourceId(ref.sourceId, ref.source)
+      : null;
 
   if (!meta) {
     return new ImageResponse(<OgCard eyebrow="Book" title="Sight-word books for young readers" />, size);
