@@ -53,6 +53,7 @@ export default function LeaderboardPage() {
         `
         )
         .not('last_processed', 'is', null)
+        .eq('rr_book.source', 'gutenberg')
         .order('dolch_percentage', { ascending: false })
         .limit(500);
 

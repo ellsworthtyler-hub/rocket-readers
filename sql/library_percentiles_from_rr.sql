@@ -13,8 +13,10 @@ WITH base AS (
     dialog_percentage::float8 AS dialog,
     flesch_grade::float8 AS flesch_grade,
     flesch_reading_ease::float8 AS flesch_ease
-  FROM public.rr_book_metadata
-  WHERE last_processed IS NOT NULL
+  FROM public.rr_book_metadata m
+  JOIN public.rr_book b ON b.id = m.book_id
+  WHERE m.last_processed IS NOT NULL
+    AND b.source = 'gutenberg'  -- 2026-11-03: Gutenberg-only (see 2026-11-03_gutenberg_only_views.sql)
 )
 SELECT
   -- Higher-is-better metrics: top_N ≈ high percentiles

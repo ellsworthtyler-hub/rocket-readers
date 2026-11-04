@@ -283,7 +283,8 @@ export async function listProcessedBooks(opts: ListBooksParams = {}) {
   let query = supabase
     .from('rr_book_metadata')
     .select(LIST_SELECT, { count: 'exact' })
-    .not('last_processed', 'is', null);
+    .not('last_processed', 'is', null)
+    .eq('rr_book.source', 'gutenberg');
 
   if (opts.minDolch && opts.minDolch > 0) {
     query = query.gte('dolch_percentage', opts.minDolch);
