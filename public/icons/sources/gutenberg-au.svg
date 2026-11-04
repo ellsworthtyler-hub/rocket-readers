@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Project Gutenberg Australia">
+  <title>Project Gutenberg Australia</title>
+  <rect x="0.5" y="0.5" width="23" height="23" rx="5" fill="#065F46"/>
+  <path d="M4 8.2c2.6-.9 5.2-.6 7.4.9v9.4c-2.2-1.4-4.8-1.7-7.4-.9z" fill="#FFFFFF"/>
+  <path d="M20 8.2c-2.6-.9-5.2-.6-7.4.9v9.4c2.2-1.4 4.8-1.7 7.4-.9z" fill="#FFFFFF"/>
+  <!-- Southern Cross hint: 4 gold stars on right page + 1 small -->
+  <g fill="#F59E0B">
+    <circle cx="16.6" cy="10.9" r="0.95"/>
+    <circle cx="18.4" cy="13.2" r="0.8"/>
+    <circle cx="16.3" cy="15.9" r="1.05"/>
+    <circle cx="14.7" cy="13.4" r="0.75"/>
+  </g>
+  <!-- seven-point accent star -->
+  <path d="M12 2.2l.86 1.86 2.02-.4-.98 1.8 1.6 1.28-2.03.3.08 2.05L12 7.6l-1.55 1.49.08-2.05-2.03-.3 1.6-1.28-.98-1.8 2.02.4z" fill="#FBBF24"/>
+</svg>

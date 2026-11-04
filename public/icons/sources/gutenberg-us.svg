@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Project Gutenberg (US)">
+  <title>Project Gutenberg (US)</title>
+  <rect x="0.5" y="0.5" width="23" height="23" rx="5" fill="#1E3A8A"/>
+  <!-- open book -->
+  <path d="M4 8.2c2.6-.9 5.2-.6 7.4.9v9.4c-2.2-1.4-4.8-1.7-7.4-.9z" fill="#FFFFFF"/>
+  <path d="M20 8.2c-2.6-.9-5.2-.6-7.4.9v9.4c2.2-1.4 4.8-1.7 7.4-.9z" fill="#FFFFFF"/>
+  <!-- flag-stripe hint on right page -->
+  <path d="M13.8 11.2c1.8-.8 3.6-.9 5-.5M13.8 13.6c1.8-.8 3.6-.9 5-.5M13.8 16c1.8-.8 3.6-.9 5-.5" stroke="#DC2626" stroke-width="1.1" stroke-linecap="round" fill="none"/>
+  <!-- star -->
+  <path d="M12 2.4l1.03 2.1 2.32.34-1.68 1.63.4 2.3L12 7.68 9.93 8.77l.4-2.3-1.68-1.63 2.32-.34z" fill="#FFFFFF"/>
+</svg>
