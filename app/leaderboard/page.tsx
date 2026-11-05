@@ -8,9 +8,12 @@ import { BookCard } from '@/components/BookCard';
 import { supabase } from '@/lib/supabaseClient';
 import { BadgeLegend } from '@/components/BadgeLegend';
 import { isQuarantinedSourceId } from '@/lib/contentQuarantine';
+import { enabledExtraSources, sourceInfo, type BookSource } from '@/lib/bookSources';
+import { SourceIcon } from '@/components/ui/SourceIcon';
 
 interface Book {
   id: string;
+  source: string;
   title: string;
   author: string;
   dolch: string;
@@ -24,11 +27,46 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'dolch' | 'fry' | 'dialog' | 'flesch'>('dolch');
   const [libraryStats, setLibraryStats] = useState<any>(null);
+  // Optional source filter; Gutenberg is the default (and the only source in library_percentiles).
+  const [source, setSource] = useState<BookSource>('gutenberg');
+  const sourceOptions: BookSource[] = ['gutenberg', ...enabledExtraSources().filter((s) => s !== 'gutenberg_au')];
 
   useEffect(() => {
     const fetchBooksFromSupabase = async () => {
       setLoading(true);
 
+      if (source !== 'gutenberg') {
+        // Non-Gutenberg sources: rr_book_listing / library_percentiles_by_source views
+        // (sql/2026-11-03_multi_source_listing.sql) only expose books that passed QA 4b-4d
+        // and are not quarantined.
+        const { data: statsData } = await supabase
+          .from('library_percentiles_by_source')
+          .select('*')
+          .eq('source', source)
+          .maybeSingle();
+        setLibraryStats(statsData ?? null);
+        const { data, error } = await supabase
+          .from('rr_book_listing')
+          .select('book_id, source, source_id, title, author, dolch_percentage, fry_percentage, dialog_percentage, flesch_grade')
+          .eq('source', source)
+          .order('dolch_percentage', { ascending: false, nullsFirst: false })
+          .limit(500);
+        if (error) console.error('Error fetching leaderboard books:', error);
+        setBooks(
+          (data || []).map((b: any) => ({
+            id: String(b.source_id),
+            source: b.source,
+            title: b.title || `Book ${b.book_id}`,
+            author: b.author || 'Unknown Author',
+            dolch: b.dolch_percentage?.toString() || '0',
+            fry: b.fry_percentage?.toString() || '0',
+            fleschGrade: b.flesch_grade?.toString() || '0',
+            dialogRatio: b.dialog_percentage?.toString() || '0',
+          }))
+        );
+        setLoading(false);
+        return;
+      }
       const { data: statsData } = await supabase
         .from('library_percentiles')
         .select('*')
@@ -67,6 +105,7 @@ export default function LeaderboardPage() {
         const rr = Array.isArray(b.rr_book) ? b.rr_book[0] : b.rr_book;
         return {
           id: String(rr?.source_id ?? b.book_id),
+          source: 'gutenberg',
           title: rr?.title || `Book ${b.book_id}`,
           author: rr?.author || 'Unknown Author',
           dolch: b.dolch_percentage?.toString() || '0',
@@ -81,7 +120,7 @@ export default function LeaderboardPage() {
     };
 
     fetchBooksFromSupabase();
-  }, []);
+  }, [source]);
 
   const sortedBooks = useMemo(() => {
     const sorted = [...books];
@@ -131,6 +170,26 @@ export default function LeaderboardPage() {
             </button>
           ))}
         </div>
+        {sourceOptions.length > 1 && (
+          <div className="flex flex-wrap justify-center gap-2 mb-6" role="group" aria-label="Book source">
+            {sourceOptions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSource(s)}
+                aria-pressed={source === s}
+                className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold border-2 transition ${
+                  source === s
+                    ? 'border-emerald-400 bg-slate-700 text-white'
+                    : 'border-slate-600 bg-slate-800 text-slate-300 hover:border-emerald-400'
+                }`}
+              >
+                <SourceIcon source={s} size={18} />
+                {sourceInfo(s).label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -140,7 +199,7 @@ export default function LeaderboardPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {sortedBooks.map((book) => (
-            <BookCard key={book.id} {...book} libraryStats={libraryStats} />
+            <BookCard key={`${book.source}:${book.id}`} {...book} libraryStats={libraryStats} />
           ))}
           {sortedBooks.length === 0 && (
             <p className="col-span-full text-center text-slate-400 py-12 font-semibold">
