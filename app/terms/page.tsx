@@ -32,6 +32,18 @@ export default function TermsPage() {
         not affiliated with or endorsed by it. Our enhanced editions, statistics, and classroom
         materials are our own work.
       </p>
+      <p>
+        Some book pages show reading statistics for texts from Wikisource and Wikibooks. Those
+        texts are written and edited by the Wikisource and Wikibooks contributors and are
+        available under the{' '}
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/" className="underline" rel="license noopener noreferrer" target="_blank">
+          Creative Commons Attribution-ShareAlike 4.0
+        </a>{' '}
+        license. Each such page links to the original and credits its contributors. Reading
+        statistics we show are descriptions of the text, not a modified edition; we do not offer a
+        reader or classroom packets for those titles. Rocket Readers is not
+        affiliated with or endorsed by the Wikimedia Foundation.
+      </p>
 
       <h2>Subscriptions, renewal, and cancellation</h2>
       <ul>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { isQuarantinedSourceId } from "@/lib/contentQuarantine";
+import { SourceIcon } from "@/components/ui/SourceIcon";
 
 const PAGE_SIZE = 40;
 
@@ -351,8 +352,10 @@ export default function PartsOfSpeechPage() {
               return (
                 <li key={book.sourceId} className="border-b border-slate-800 last:border-b-0 [content-visibility:auto] [contain-intrinsic-size:auto_4.5rem]">
                   <div className="grid grid-cols-1 gap-2 px-4 py-3 hover:bg-slate-800/70 md:grid-cols-[minmax(14rem,1.5fr)_minmax(9rem,1fr)_minmax(14rem,1.5fr)_4.5rem] md:items-center md:gap-4">
-                    <Link href={`/book/${book.sourceId}`} className="font-bold text-white hover:text-emerald-300 md:truncate" title={book.title}>
-                      {book.title}
+                    {/* rr_book_pos_search is Gutenberg-only (sql/2026-11-03_gutenberg_only_views.sql) */}
+                    <Link href={`/book/${book.sourceId}`} className="font-bold text-white hover:text-emerald-300 md:truncate inline-flex items-center gap-2" title={book.title}>
+                      <SourceIcon source="gutenberg" size={16} className="shrink-0" />
+                      <span className="md:truncate">{book.title}</span>
                     </Link>
                     <span className="text-slate-300 md:truncate" title={book.author}>{book.author}</span>
                     <div className="flex items-center gap-3 md:contents">

@@ -2,9 +2,13 @@
 //  Cosmic-styled book cards for library / leaderboard / home
 
 import Link from 'next/link';
+import { SourceIcon } from '@/components/ui/SourceIcon';
+import { bookHref } from '@/lib/bookSources';
 
 interface BookCardProps {
   id: string;
+  /** rr_book.source; defaults to Gutenberg. */
+  source?: string;
   title: string;
   author?: string;
   dolch: string;
@@ -56,6 +60,7 @@ function toPercent(val: string | number): string {
 
 export function BookCard({
   id,
+  source,
   title,
   author,
   dolch,
@@ -79,7 +84,7 @@ export function BookCard({
     (!libraryStats && dolchNum >= 75);
 
   return (
-    <Link href={`/book/${id}`} className="cosmic-card group">
+    <Link href={bookHref(source, id)} className="cosmic-card group">
       {wow && (
         <span
           className="absolute top-3 right-3 bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full rotate-6"
@@ -92,8 +97,9 @@ export function BookCard({
         <h3 className="font-display font-bold text-lg text-slate-50 line-clamp-2 group-hover:text-emerald-300 transition-colors mb-1">
           {title}
         </h3>
-        <p className="text-slate-400 text-sm line-clamp-1 font-semibold">
-          {author || 'Unknown Author'}
+        <p className="text-slate-400 text-sm line-clamp-1 font-semibold flex items-center gap-1.5">
+          <SourceIcon source={source} size={16} className="shrink-0" />
+          <span className="line-clamp-1">{author || 'Unknown Author'}</span>
         </p>
       </div>
 
