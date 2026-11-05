@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Wikisource">
+  <title>Wikisource</title>
+  <rect x="0.5" y="0.5" width="23" height="23" rx="5" fill="#0E7490"/>
+  <!-- open book -->
+  <path d="M3.6 7.4c2.7-1 5.4-.7 7.7.9v10.2c-2.3-1.5-5-1.9-7.7-.9z" fill="#FFFFFF"/>
+  <path d="M20.4 7.4c-2.7-1-5.4-.7-7.7.9v10.2c2.3-1.5 5-1.9 7.7-.9z" fill="#FFFFFF"/>
+  <!-- text lines left page -->
+  <path d="M5.3 10.4c1.5-.4 3-.3 4.4.3M5.3 12.8c1.5-.4 3-.3 4.4.3M5.3 15.2c1.5-.4 3-.3 4.4.3" stroke="#0E7490" stroke-width="1" stroke-linecap="round" fill="none"/>
+  <!-- jigsaw piece on right page: square body with knobs on top and right -->
+  <g fill="#0E7490">
+    <rect x="13.9" y="11.6" width="4.2" height="4.2" rx="0.5"/>
+    <circle cx="16" cy="11.3" r="1.05"/>
+    <circle cx="18.4" cy="13.7" r="1.05"/>
+  </g>
+  <circle cx="14.1" cy="13.7" r="0.9" fill="#FFFFFF"/>
+</svg>
