@@ -41,7 +41,8 @@ export default function BookEnrichmentHero({
 }: {
   title: string;
   author: string;
-  gutenbergId: string;
+  /** Gutenberg ebook number; null for non-Gutenberg sources (no gutenberg.org chip). */
+  gutenbergId: string | null;
   enrichment: BookEnrichment;
 }) {
   const cover = enrichment.cover_url?.trim() || null;
@@ -130,14 +131,16 @@ export default function BookEnrichmentHero({
               Google Books
             </a>
           ) : null}
-          <a
-            className={chip}
-            href={`https://www.gutenberg.org/ebooks/${gutenbergId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Gutenberg #{gutenbergId}
-          </a>
+          {gutenbergId ? (
+            <a
+              className={chip}
+              href={`https://www.gutenberg.org/ebooks/${gutenbergId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Gutenberg #{gutenbergId}
+            </a>
+          ) : null}
         </div>
       </div>
     </div>
