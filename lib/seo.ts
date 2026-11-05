@@ -23,6 +23,8 @@ export type BookSeoInput = {
   author: string;
   dolch_percentage?: number | string | null;
   flesch_grade?: number | string | null;
+  /** rr_book.source; defaults to Gutenberg copy. */
+  source?: string;
 };
 
 export function bookSeoTitle(b: BookSeoInput): string {
@@ -42,7 +44,16 @@ export function bookSeoDescription(b: BookSeoInput): string {
     g ? `Flesch-Kincaid grade ${g}` : null,
   ].filter(Boolean);
   const stats = parts.length ? `: ${parts.join(', ')}` : '';
-  return `Reading-level stats for ${b.title}${byline}${stats}. A free public-domain book from Project Gutenberg, with a Rocket Readers enhanced edition.`;
+  switch (b.source) {
+    case 'wikisource':
+      return `Reading-level stats for ${b.title}${byline}${stats}. Text from Wikisource (CC BY-SA 4.0).`;
+    case 'wikibooks':
+      return `Reading-level stats for ${b.title}${byline}${stats}. A free Wikibooks title (CC BY-SA 4.0).`;
+    case 'gutenberg_au':
+      return `Reading-level stats for ${b.title}${byline}${stats}.`;
+    default:
+      return `Reading-level stats for ${b.title}${byline}${stats}. A free public-domain book from Project Gutenberg, with a Rocket Readers enhanced edition.`;
+  }
 }
 
 /** Serialize JSON-LD safely for a <script> tag. */
