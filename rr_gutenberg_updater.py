@@ -243,10 +243,14 @@ def update_gutenberg() -> bool:
     logger.info("📥 Fetching daily RSS...")
     new_books.update(parse_rss())
 
+    # 2026-11: only PG 'Text' items become books (GUTINDEX also lists audio/dataset/image entries,
+    # which have no plain text; the Apr-2026 dump filled those IDs with a neighbour's text).
+    from rr_sot_guard import catalog_type
     missing = {
         bid: data
         for bid, data in new_books.items()
         if bid not in existing_ids and is_english_lang(data.get("language"))
+        and catalog_type(str(bid)) in (None, "Text")
     }
     logger.info(f"🎯 Found {len(missing):,} new English books to add")
 

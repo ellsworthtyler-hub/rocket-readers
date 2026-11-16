@@ -13,6 +13,7 @@ load_dotenv(os.environ.get("RR_ENV", "/workspace/smoke_phase0/LiteracyProject.en
 for _k in list(os.environ):
     os.environ[_k] = os.environ[_k].strip()
 from supabase import create_client
+from rr_sot_guard import check as sot_check  # 2026-11 identity gate (GUS nearby-ID mixup)
 
 BUCKET = "cleaned-books"
 UA = "RocketReadersPipeline/1.0 (educational; polite-bot)"
@@ -97,6 +98,8 @@ def process(sb, book: dict, blocks: set[str]) -> str:
     body, header = clean(raw)
     if COPYRIGHT_HDR.search(header): return "skip:copyright_header"
     if len(body) < 500: return "fail:too_short"
+    ok, why = sot_check(sid, raw, body, book.get("title"))
+    if not ok: return "fail:identity:" + why
     opts = {"content-type": "text/plain; charset=utf-8", "upsert": "true"}
     sb.storage.from_(BUCKET).upload(key, body.encode("utf-8"), file_options=opts)
     return "uploaded" if exists(sb, key) else "fail:verify"
@@ -114,10 +117,14 @@ def reclean(sb, book: dict, blocks: set[str]) -> str:
         RECLEAN_BACKUP.mkdir(parents=True, exist_ok=True)
         (RECLEAN_BACKUP / key).write_text(old, encoding="utf-8")
     body, header = clean(old) if old else ("", "")
-    if not old or boilerplate_left(body) or len(body) < 500:
+    # 2026-11: never trust an existing SoT blindly; a wrong-book SoT can be perfectly "clean".
+    old_ok = bool(old) and sot_check(sid, old, body, book.get("title"))[0]
+    if not old or not old_ok or boilerplate_left(body) or len(body) < 500:
         raw = fetch(sid)
         if not raw: return "fail:download"
         body, header = clean(raw)
+        ok, why = sot_check(sid, raw, body, book.get("title"))
+        if not ok: return "fail:identity:" + why
     if COPYRIGHT_HDR.search(header): return "skip:copyright_header"
     if boilerplate_left(body): return "fail:boilerplate_remains"
     if len(body) < 200: return "fail:too_short"
