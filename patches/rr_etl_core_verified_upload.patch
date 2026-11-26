@@ -1,0 +1,56 @@
+--- a/rr_etl_core.py
++++ b/rr_etl_core.py
+@@ -871,23 +871,22 @@
+         except Exception as e:
+             logger.warning(f"Local analysis save failed: {e}")
+ 
++    analysis_verified = False
+     if upload_analysis_r2:
+-        try:
+-            r2_client.put_object(
+-                Bucket=BUCKET_ANALYSIS,
+-                Key=f"{art_id}_analysis.json",
+-                Body=body.encode("utf-8") if isinstance(body, str) else body,
+-                ContentType="application/json",
+-            )
+-            logger.info(f"   → R2 analysis: {BUCKET_ANALYSIS}/{art_id}_analysis.json")
+-        except Exception as e:
+-            logger.warning(f"R2 analysis upload failed (local copy may still exist): {e}")
++        from rr_analysis_io import put_analysis_verified
++        up = put_analysis_verified(r2_client, art_id, body, bucket=BUCKET_ANALYSIS, overwrite=True)
++        analysis_verified = up.verified
++        if up.verified:
++            logger.info(f"   → R2 analysis (verified {up.bytes:,} B sha256={up.sha256[:12]}): {BUCKET_ANALYSIS}/{up.key}")
++        else:
++            logger.error(f"R2 analysis upload NOT verified for {up.key}: {up.error} — has_analysis_file will be False")
+     else:
+-        logger.info("   → R2 analysis upload skipped (local-only mode)")
++        logger.info("   → R2 analysis upload skipped (local-only mode) — has_analysis_file will be False")
+ 
+     # Populate rr_book_metadata for website stats
+     try:
+-        await _save_book_metadata(internal_book_id, source_id, analysis_sentences, analysis_tokens, clean_text)
++        await _save_book_metadata(internal_book_id, source_id, analysis_sentences, analysis_tokens, clean_text,
++                                  has_analysis_file=analysis_verified)
+     except Exception as meta_err:
+         logger.warning(f"Failed to save rr_book_metadata for book {source_id}: {meta_err}")
+ 
+@@ -928,7 +927,8 @@
+     return round((dialogue_sentences / total_sentences) * 100, 2)
+ 
+ 
+-async def _save_book_metadata(internal_book_id: int, source_id: str, sentences: list, tokens: list, clean_text: str):
++async def _save_book_metadata(internal_book_id: int, source_id: str, sentences: list, tokens: list, clean_text: str,
++                              has_analysis_file: bool = False):
+     """
+     Compute and upsert summary statistics into rr_book_metadata.
+ 
+@@ -1009,7 +1009,7 @@
+         "flesch_reading_ease": flesch_ease,
+         # Stored in flesch_grade column for website compatibility; value is FK grade level
+         "flesch_grade": flesch_kincaid,
+-        "has_analysis_file": True,
++        "has_analysis_file": bool(has_analysis_file),  # only True after a verified R2 upload
+         "last_processed": now_iso,
+         "processing_version": 3,  # v3 = unique breadth + FK grade + dialogue fix
+     }
